@@ -242,6 +242,83 @@ will produce all calib and calibe fits files.
 
 17) Generate H5 files:
 
+
+All scripts are found at:
+
+https://github.com/HETDEX/hetdex_api/tree/hdr2/h5tools
+
+SHOT FILES
+----------
+For each DATE OBS, to create  single H5 shot file:
+
+    python3 create_shot_hdf5.py -d DATE -o OBS -of DATEvOBS.h5 --tar
+    python3 append_calfib.py -d DATE -o OBS -of DATEvOBS.h5
+    python3 create_astrometry_hdf5.py -d DATE -o OBS -of DATEvOBS.h5 --append
+    python3 create_cal_hdf5.py -d DATE -o OBS -of DATEvOBS.h5 --append
+
+Note that default directories used for HDR2 are in the hdr2 branch for
+hetdex-api and can be found in hdr2/software/hetdex-api/h5tools for each
+of the above programs.
+
+You will need directories that contain astrometry output, throughput
+output and the reduced multi*fits
+
+The option --tar means the files are ingested from the
+*mu.tar files generated from tarring the multi*fits. It is advised to
+run all scripts in serial for each
+shot. You can submit 240 jobs on 10 Nodes at a time on wrangler. It takes
+between 10-30 min per shot (when the queue is running smoothly).
+
+SURVEY AND MASTER FIBER FILE
+----------------------------
+
+ python3 create_survey_hdf5.py -of survey_hdr2.h5 -sl dex.hdr2.shotlist
+
+You must provide the shot diretory (its default is obvious in the script).
+This will combine every Shot table in the H5 produced above to make a
+basic survey properties file. This can be done on an idev node as its quick.
+
+    python3 create_fiber_index_hdf5.py -of fiber_index_hdr2.h5
+
+Likewise, the above file collects the FiberIndex tables from every shot
+file to make a master fiber file.
+
+DETECTION H5 FILE
+--------------
+Use chenxu's cat file (or just the mc.res files with a source list) to ingest
+by month or from a defined directory. If doing by month (eg --month 201701 ) then
+this means the .list and .spec files must be organized by month. Otherwise use
+detect_path to specifc the directory where all files lie.
+
+>>> python3 create_detect_hdf5.py -m 201901 -of detect_201901.h5
+
+Run all months in a single job then combine with:
+
+>>> python3 create_detect_hdf5.py --merge -of detect_hdr2.h5
+
+To run continuum sources:
+
+>>> python3 create_detect_hdf5.py -dp /data/00115/gebhardt/cs/spec /
+-cs /data/00115/gebhardt/cs/rext1 -of continuum_sources.h5
+
+Machine Learning Inputs
+-----------------------
+
+Break down the table hdr2/detects/detect_hdr2.tab into different shots so
+you don't load massive tables in (helps to parallelize things). I call these
+tables dets/det_SHOTID.tab
+
+   python3 ../hetdex-api/hetdex_tools/get_spec2D.py --dets dets/det_SHOTID.tab
+                -dx 100 -dy 9 --h5file -s SHOTID
+
+You can 240 of these on 10 Nodes at a time. Then combine the outputfiles
+(format is im2D_SHOTID.h5) into a large merged H5 file:
+
+   python3 get_spec2D.py --merge -dx 100 -dy 9 --h5file
+
+Requires a directory populated with im2D*.h5 files. Will merge all of
+these in the file merged_im2D.h5
+
 18) Elixer:
 
 Generates individual detection reports as PDFs and PNGs. Releated utilities
