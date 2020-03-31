@@ -1,0 +1,29 @@
+resdir=$(pwd)
+cut=50.
+date=$1
+shot=$2
+cd /tmp
+mkdir -p maxflux$1v$2
+cd maxflux$1v$2
+cp /data/00115/gebhardt/cs/rfindmax .
+ln -s /data/00115/gebhardt/red1/reductions/$date/virus/virus0000$2/exp01/virus/m*fits .
+ls m*fits | awk '{print "rfindmax",$1}' | sed s/.fits// > run1
+chmod +x run1
+run1
+rm m*fits
+grep . m*dat | sed s/.dat:/_/ > d1
+rm m*dat
+awk '{if($2>cut0||$3>cut0) print $0}' cut0=$cut d1 > d2
+awk '{print "grep",$1,"/data/00115/gebhardt/detect/"date0"v"shot0"/dithall.use | grep exp01"}' date0=$date shot0=$shot d2 > rj1
+chmod +x rj1
+rj1 > d3
+awk '{print $8}' d3 | sed s/.ixy// | awk '{print "grep",$1,"d2"}' > rj2
+chmod +x rj2
+rj2 > d5
+paste d5 d3 | awk '{print $4,$5,$2,$3,$1}' > d4
+~gebhardt/bin/matchradec2
+awk '{print $0,date0"v"shot0}' date0=$date shot0=$shot radec.out > $1v$2.cs
+mv $1v$2.cs $resdir/csfiles/.
+cd ..
+rm -r /tmp/maxflux$1v$2
+

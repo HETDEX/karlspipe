@@ -1,0 +1,54 @@
+# For BIAS:
+ls /data/00115/gebhardt/lib_calib/lib_mbias/*/masterbias_*.fits | awk '{print "\""$1"\""}' > listbias
+rgetpixa listbias
+sed s/"\/"/" "/g listbias.dat  | awk '{print $1,$2,$8,$9}' | sed s/masterbias_// | sed s/.fits// | sed s/_/" "/g > listbias2.dat
+#awk '{print $4}' listbias2.dat | sort -g | uniq > listin2
+
+# For BACK:
+ls /data/00115/gebhardt/back/2*sci/bk*.fits | awk '{print "\""$1"\""}' > listback
+rgetpixa listback
+sed s/"\/"/" "/g listback.dat  | awk '{print $1,$2,$7,$8}' | sed s/sci// | sed s/.fits// | sed s/i/" "/g | awk '{print $1,$2,$3,$5,$5}' | sed s/LL// | sed s/LU// | sed s/RL// | sed s/RU// | sed s/LL/" LL"/ | sed s/LU/" LU"/ | sed s/RL/" RL"/ | sed s/RU/" RU"/ > listback2.dat
+#awk '{print $4}' listback2.dat | sort -g | uniq > listin2
+
+# For Fiber Profile:
+ls /data/00115/gebhardt/lib_calib/*/*cmbp.fits | awk '{print "\""$1"\""}' > listprof
+rgetpix_prof listprof
+sed s/"\/"/" "/g listprof.dat  | awk '{print $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$20,$21}' | sed s/sci// | sed s/cmbp.fits// | sed s/i/" "/ | sed s/a/" "/g | awk '{print $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18}' | sed s/LL/" LL"/ | sed s/LU/" LU"/ | sed s/RL/" RL"/ | sed s/RU/" RU"/ > listprof2.dat
+# cp listprof2.dat listin
+#cp listin j2
+#gfplane2_p
+#plotcalib_p
+
+# For A2A:
+ls /data/00115/gebhardt/lib_calib/*/*ata.dat | awk '{print "\""$1"\""}' > lista2a
+rgetpix_a2a lista2a
+sed s/"\/"/" "/g lista2a.dat | awk '{print $1,$6,$7}' | sed s/i// | sed s/ata.dat// | sed s/a/" "/ > lista2a2.dat
+awk '{print $1,$1,$2,$3,$3,$4}' lista2a2.dat  > j1
+mv j1 lista2a2.dat
+
+# For F2F:
+ls /data/00115/gebhardt/lib_calib/2*/*cmbf.fits | awk '{print "\""$1"\""}' > listf2f
+rgetpix_f2f listf2f
+sed s/"\/"/" "/g listf2f.dat  | awk '{print $1,$2,$7,$8}' | sed s/cmbf.fits// | sed s/i/" "/g | sed s/a/" "/ | awk '{print $1,$2,$3,$4,$4,$5}' > listf2f2.dat
+#cp listf2f2.dat j1
+#gfplane
+#mv out listin
+#plotcalib
+
+# For WaveTrace:
+ls /data/00115/gebhardt/lib_calib/2*/*cbwt.fits | awk '{print "\""$1"\""}' > listwave
+rgetpix_wv listwave
+sed s/"\/"/" "/g listwave.dat  | awk '{print $1,$2,$7,$8}' | sed s/cbwt.fits// | sed s/i/" "/g | sed s/a/" "/ | awk '{print $1,$2,$3,$4,$4,$5}' > listwave2.dat
+#cp listwave2.dat j1
+#gfplane
+#mv out listin
+#plotcalib
+
+# For FiberTrace:
+ls /data/00115/gebhardt/lib_calib/2*/*cbxt.fits | awk '{print "\""$1"\""}' > listfib
+rgetpix_fib listfib
+sed s/"\/"/" "/g listfib.dat  | awk '{print $1,$2,$7,$8}' | sed s/cbxt.fits// | sed s/i/" "/g | sed s/a/" "/ | awk '{print $1,$2,$3,$4,$4,$5}' > listfib2.dat
+#cp listfib2.dat j1
+#gfplane
+#mv out listin
+#plotcalib

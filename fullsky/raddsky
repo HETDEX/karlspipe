@@ -1,0 +1,13 @@
+resdir=$(pwd)
+mthd=`echo "$2" | cut -b 1-6`
+echo "Doing $2_$1"
+cd /tmp
+mkdir -p sky$2_$1
+cd sky$2_$1
+rm -f out.fits
+~gebhardt/bin/imaddsky << eof
+$1 $2
+eof
+mv out.fits ${resdir}/${mthd}/$2_$1_cal.fits
+cd ..
+rm -r sky$2_$1

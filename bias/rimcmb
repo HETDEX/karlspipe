@@ -1,0 +1,20 @@
+name=$1
+cname=$2
+dir1=$3
+mth=$4
+ifu=$5
+spec=$6
+amp=$7
+rm -f imcmb.fits imbox.fits
+~gebhardt/bin/imcmb << eof
+$name
+eof
+~gebhardt/bin/imbox2 << eof
+imcmb.fits
+1
+1 7
+1
+0
+eof
+mv imcmb.fits $dir1/biasm${mth}i${ifu}s${spec}a${amp}c${cname}.fits
+mv imbox.fits $dir1/masterbias_${spec}_${cname}_${amp}.fits
