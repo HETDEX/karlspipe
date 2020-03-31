@@ -143,9 +143,16 @@ again. The output is the fwhm and extracted spectra.
 10) SED fits to stars: get the stars with 5 SDSS colors, and fits an SED
 
 scripts/list: input list of stars with 5 colors, in the form of shuffle output
-code: SEDfitter.py
+old code: SEDfitter.py
+
+For HDR2 we use stellarSEDfits:
+  https://github.com/grzeimann/stellarSEDfits
+
+   qfit_gaia --filename sources.hdr2 --ebv 0.02 --outfolder output
 
 This is run for each star in an IFU, and output SED written to a file with a unique name.
+It is recommended to run under 5000 stars per task to most 
+efficiently run in parallel.
 
 11) g-band normalization for throughput: uses the g-band from SDSS (or
 PS) and integrates over the stellar spectrum
@@ -272,13 +279,13 @@ between 10-30 min per shot (when the queue is running smoothly).
 SURVEY AND MASTER FIBER FILE
 ----------------------------
 
-    python3 create_survey_hdf5.py -of survey_hdr2.h5 -sl dex.hdr2.shotlist
+	python3 create_survey_hdf5.py -of survey_hdr2.h5 -sl dex.hdr2.shotlist
 
 You must provide the shot diretory (its default is obvious in the script).
 This will combine every Shot table in the H5 produced above to make a
 basic survey properties file. This can be done on an idev node as its quick.
 
-    python3 create_fiber_index_hdf5.py -of fiber_index_hdr2.h5
+      python3 create_fiber_index_hdf5.py -of fiber_index_hdr2.h5
 
 Likewise, the above file collects the FiberIndex tables from every shot
 file to make a master fiber file.
