@@ -36,6 +36,11 @@ c- set iuse to fit calibration from frame (0), or read in calibration (1), limit
       write(cmth,2001) imth
  2001 format(i6)
 
+      iignore=0
+      if(iuse.eq.-1) then
+         iuse=1
+         iignore=1
+      endif
       iuse_out=0
       if(iuse.eq.2) iuse_out=1
       if(iuse.eq.2) iuse=1
@@ -198,7 +203,8 @@ c- remove overscan and bias, and divide by flat
             nx=nx+1
             arr(nx,ny)=xd(i,j)-xb-xbias(i,j)
 c            arr(nx,ny)=xd(i,j)-xb
-            if(xflat(i,j).gt.0) then
+c            if(xflat(i,j).gt.0) then
+            if(xflat(i,j).gt.0.7) then
                arr(nx,ny)=arr(nx,ny)/xflat(i,j)
             else
                arr(nx,ny)=0.
@@ -375,9 +381,18 @@ c- check the trace
          print *,"N bad trace: ",nbadtrace,cname0(1:34)
       endif
 
+c- mask the 2d image for pixel defects
+      call getpdefect(arr,cspecid,amp,iuse)
+
+c- make a scattered light model and subtract
+      call getslight(arr,xtrace,nback,nbackbin,iuse)
+
 c- extract the spectra
       call extract(arr,xtrace,nfbin,x,xprof,xspec,xspecr,xspecc,
-     $     ifib,iuse)
+     $     iignore,ifib,iuse)
+
+c- mask the extracted spectra for charge traps
+      call getctrap(xspec,ifib,cspecid,amp,iuse)
 
 c- fit the wavelength trace
       call getwtrace(xspec,wtrace,ifib,iuse,0)
@@ -406,7 +421,7 @@ c- subtract the master spectrum
      $     nmaster,wmaster,xmaster,arrs,arrm,xspecs,xspecsm,ifib,0)
 
 c- subtract a smooth background from the extracted array
-      call getback(xspecs,ifib,ifibc,iuse,0)
+      call getback(xspecs,ifib,ifibc,ncut,iuse,0)
 
 c- get new master with continuum sources removed
       if(iuse.eq.1) then
@@ -415,7 +430,7 @@ c- get new master with continuum sources removed
          call subtract(arr,xspec,xtrace,nfbin,x,xprof,xftf,wtrace,
      $        nmaster,wmaster,xmaster,arrs,arrm,xspecs,xspecsm,ifib,0)
       endif
-      call getback(xspecs,ifib,ifibc,iuse,0)
+      call getback(xspecs,ifib,ifibc,ncut,iuse,0)
 
 c- get the error frame and count zeros
       call geterror(arrm,arrs,xflat2,xtrace,nfbin,x,
@@ -573,6 +588,11 @@ c         call ftcpdt(50,51,ier)
          call ftp2de(51,igc,narrm,naxes(1),naxes(2),arr,ier)
          call ftpkls(51,"NAME0",cname0,"Label",ier)
          call ftpkls(51,'EXTNAME','processed',"Label",ier)
+         call ftpkyj(51,'Ncut',ncut,"Continuum Fibers",ier)
+         call ftpkyj(51,'Nerr',nerr,"N pix removed",ier)
+         call ftpkyj(51,'Nbtrace',nbadtrace,"N bad trace",ier)
+         call ftpkyj(51,'Nback',nback,"N back pixels",ier)
+         call ftpkyj(51,'Nbackb',nbackbin,"N back sections",ier)
 
          call ftiimg(51,-32,naxis,naxes,ier)
          call ftp2de(51,igc,1032,naxes(1),naxes(2),arrerr,ier)
@@ -1281,15 +1301,24 @@ c- copy results over
       return
       end
 
-      subroutine getback(xspecs,ifib,ifibc,iuse,iplot)
+      subroutine getback(xspecs,ifib,ifibc,ncut,iuse,iplot)
       parameter(narrm=2000)
-      real xspecs(narrm,112),xin(1032),xin2(1032),xin3(1032)
-      real xspecn(112)
-      integer ifib(112),ifibc(112),ifibc2(112)
+      real xspecs(narrm,112),xin(1032)
+      real xin1(1032*10),xin2(1032*10),xin3(1032*10)
+      real xspecn(narrm,112),xla(3),xba(3)
+      integer ifib(112),ifibc(112),ifibc2(112),ila(4),ifibnew(112)
 
       if(iuse.eq.0) return
 
       ifibh=2
+      ispech=20
+      ila(1)=100
+      ila(2)=400
+      ila(3)=700
+      ila(4)=1000
+      xla(1)=float(ila(1)+ila(2))/2.
+      xla(2)=float(ila(2)+ila(3))/2.
+      xla(3)=float(ila(3)+ila(4))/2.
 
 c- find the continuum sources                                                                                                                     
       ilo=300
@@ -1310,51 +1339,122 @@ c- find the continuum sources
       enddo
       call biwgt(xin2,nin2,xb,xs)
 
+      xs=min(xs,70.)
       xcut=2.5*xs
       xcut2=-6.0*xs
       ncut=0
       do j=1,112
          ifibc(j)=0
          ifibc2(j)=0
-         if(xin3(j).gt.xcut) ifibc(j)=1
-c         if(abs(xin3(j)).gt.xcut) ifibc(j)=1
-         if(xin3(j).lt.xcut2) ifibc2(j)=1
+         xcheck=xin3(j)+xb
+         if(xcheck.gt.xcut) ifibc(j)=1
+         if(xcheck.lt.xcut2) ifibc2(j)=1
          if(ifibc(j).eq.1) ncut=ncut+1
-c         print *,j,ifibc(j),xin3(j)
+c         print *,j,ifibc(j),xin3(j),xb,xs,xcut
+         ifibnew(j)=ifibc(j)
       enddo
 
 c      print *,"N continuum Fibers = ",ncut
 
-      do j=1,112
-         jlo=max(1,j-ifibh)
-         jhi=min(112,j+ifibh)
-         nin=0
-         do jt=jlo,jhi
-            if(ifibc(jt).eq.0) then
-               do i=ilo,ihi
-                  nin=nin+1
-                  xin(nin)=xspecs(i,jt)
+c - remove +-1 around continuum fiber
+      do i=2,111
+         if(ifibc(i).eq.1) ifibnew(i-1)=1
+         if(ifibc(i).eq.1) ifibnew(i+1)=1
+      enddo
+
+c - get a smoothed background: iback=0 is by fiber, 1 is very local
+      iback=0
+      if(iback.eq.0) then
+         do j=1,112
+            jlo=max(1,j-ifibh)
+            jhi=min(112,j+ifibh)
+            nin=0
+            nin1=0
+            nin2=0
+            nin3=0
+            do jt=jlo,jhi
+c               if(ifibc(jt).eq.0) then
+               if(ifibnew(jt).eq.0) then
+c                  do i=ilo,ihi
+c                     nin=nin+1
+c                     xin(nin)=xspecs(i,jt)
+c                  enddo
+                  do i=ila(1),ila(2)
+                     nin1=nin1+1
+                     xin1(nin1)=xspecs(i,jt)
+                  enddo
+                  do i=ila(2),ila(3)
+                     nin2=nin2+1
+                     xin2(nin2)=xspecs(i,jt)
+                  enddo
+                  do i=ila(3),ila(4)
+                     nin3=nin3+1
+                     xin3(nin3)=xspecs(i,jt)
+                  enddo
+               endif
+            enddo
+c            if(nin.ge.1) then
+c               call biwgt(xin,nin,xb,xs)
+c               do i=1,1032
+c                  xspecn(i,j)=xb
+c               enddo
+            if(nin1.gt.0.and.nin2.gt.0.and.nin3.gt.0) then
+               call biwgt(xin1,nin1,xba(1),xs1)
+               call biwgt(xin2,nin2,xba(2),xs2)
+               call biwgt(xin3,nin3,xba(3),xs3)
+               jin=1
+               do i=1,1032
+                  call xlinint2(float(i),3,xla,xba,xb0,jin,jout)
+                  jin=jout
+                  xspecn(i,j)=xb0
+               enddo
+            else
+               do i=1,1032
+                  xspecn(i,j)=0.
                enddo
             endif
          enddo
-         if(nin.ge.1) then
-            call biwgt(xin,nin,xb,xs)
-            xspecn(j)=xb
-         else
-            xspecn(j)=0.
-         endif
-      enddo
+      else
+         do j=1,112
+            jlo=max(1,j-ifibh)
+            jhi=min(112,j+ifibh)
+            do i=1,1032
+               ilo2=max(1,i-ispech)
+               ihi2=min(1032,i+ispech)
+               nin=0
+               do jt=jlo,jhi
+c                  if(ifibc(jt).eq.0) then
+                  if(ifibnew(jt).eq.0) then
+                     do it=ilo2,ihi2
+                        nin=nin+1
+                        xin(nin)=xspecs(it,jt)
+                     enddo
+                  endif
+               enddo
+               if(nin.ge.1) then
+                  call biwgt(xin,nin,xb,xs)
+                  xspecn(i,j)=xb
+               else
+                  xspecn(i,j)=0.
+               endif
+            enddo
+         enddo
+      endif
 
+      ncut2=0
       do j=1,112
+         ifibc(j)=ifibnew(j)
+         if(ifibc(j).eq.1) ncut2=ncut2+1
          do i=1,1032
             if(xspecs(i,j).eq.0) then
                xspecs(i,j)=0.
             else
-               xspecs(i,j)=xspecs(i,j)-xspecn(j)
+               xspecs(i,j)=xspecs(i,j)-xspecn(i,j)
             endif
 c            if(ifibc2(j).eq.1) xspecs(i,j)=0.
          enddo
       enddo
+      ncut=ncut2
 
       return
       end
@@ -2195,13 +2295,74 @@ c            jin=jout
       return
       end
 
+      subroutine getctrap(xspec,ifib,cspecid,amp,iuse)
+      parameter (narrm=2000)
+      real xspec(narrm,112)
+      integer ifib(112)
+      character cspecid*3,amp*2,cname*5,a6*5
+
+      if(iuse.eq.0) return
+      cname=cspecid//amp
+
+      open(unit=1,
+     $     file="/data/00115/gebhardt/lib_calib/datafiles/ctrap.all",
+     $     status='old',err=777)
+      do i=1,10000
+         read(1,*,end=666) i1,i2,i3,x4,i5,a6
+         if(a6.eq.cname) then
+            do j=i2,i3
+               xspec(i1,j)=0.
+            enddo
+         endif
+      enddo
+ 666  continue
+      close(1)
+      return
+ 777  continue
+      print *,"No charge trap file"
+      close(1)
+      return
+
+      end
+
+      subroutine getpdefect(arr,cspecid,amp,iuse)
+      parameter (narrm=2000)
+      real arr(narrm,narrm)
+      character cspecid*3,amp*2,cname*5,a6*5
+
+      if(iuse.eq.0) return
+      cname=cspecid//amp
+
+      open(unit=1,
+     $     file="/data/00115/gebhardt/lib_calib/datafiles/pdefect.all",
+     $     status='old',err=777)
+      do iall=1,10000
+         read(1,*,end=666) a6,i1,i2,i3,i4
+         if(a6.eq.cname) then
+            do j=i3,i4
+               do i=i1,i2
+                  arr(i,j)=0.
+               enddo
+            enddo
+         endif
+      enddo
+ 666  continue
+      close(1)
+      return
+ 777  continue
+      print *,"No pixel defect file"
+      close(1)
+      return
+
+      end
+
       subroutine getwtrace(xspec,wout,ifib,iuse,iplot)
       parameter (narrm=2000)
       real xspec(narrm,112),wave(narrm)
       real win1(narrm),win2(narrm),xin1(narrm),xin2(narrm)
       real spec(narrm),woffa(20),soffa(20),xbinc(20),spect(narrm)
       real woffaf(narrm,112),soffaf(narrm,112),xl(1032),yl(1032)
-      real wout(narrm,112)
+      real wout(narrm,112),ydiff(20)
       integer ifib(112),nfiba(1032),nfibta(1032)
 
       if(iuse.eq.1) return
@@ -2243,7 +2404,8 @@ c            jin=jout
          endif
       enddo
 
-      if(iplot.eq.1) call pgenv(1.,1032.,-24.,24.,0,0)
+c      if(iplot.eq.1) call pgenv(1.,1032.,-24.,24.,0,0)
+      if(iplot.eq.1) call pgenv(1.,1032.,-1.,1.,0,0)
       nbin=171
       nbin=200
       nfiball=0
@@ -2323,15 +2485,16 @@ c                  call pgline(nin,win2,xin2)
                endif
             endif
          enddo
-         call fitpoly(5,xbinc,woffa,iord,nl,xl,yl)
+         call fitpoly(5,xbinc,woffa,iord,nl,xl,yl,ydiff)
          do i=1,1032
             wout(i,j)=yl(i)
          enddo
          if(iplot.eq.1) then
             call pgsci(1)
-            call pgline(5,xbinc,woffa)
+            call pgline(5,xbinc,ydiff)
+c            call pgline(5,xbinc,woffa)
             call pgsci(2)
-            call pgline(nl,xl,yl)
+c            call pgline(nl,xl,yl)
             call pgsci(1)
          endif
       enddo
@@ -2399,15 +2562,18 @@ c- upper loop
                soffaf(nb,nfiball)=soffa(nb)
             endif
          enddo
-         call fitpoly(5,xbinc,woffa,iord,nl,xl,yl)
+         call fitpoly(5,xbinc,woffa,iord,nl,xl,yl,ydiff)
          do i=1,1032
             wout(i,j)=yl(i)
          enddo
          if(iplot.eq.1) then
             call pgsci(1)
-            call pgline(5,xbinc,woffa)
             call pgsci(2)
-            call pgline(nl,xl,yl)
+            call pgline(5,xbinc,ydiff)
+            call pgsci(1)
+c            call pgline(5,xbinc,woffa)
+            call pgsci(2)
+c            call pgline(nl,xl,yl)
             call pgsci(1)
          endif
       enddo
@@ -2441,7 +2607,8 @@ c- upper loop
             call pgsci(1)
             call pgline(nin,xl,yl)
          enddo
-         do i=102,112
+c         do i=102,112
+         do i=1021,1032
             nin=0
             do j=1,112
                nin=nin+1
@@ -2498,8 +2665,195 @@ c            print *,wo,xn,rms,rmsmin,woff,soff
       return
       end
 
+      subroutine getslight(arr,xtrace,nback,nall,iuse)
+      parameter (narrm=2000)
+      real arr(narrm,narrm), xtrace(narrm,narrm),xina(1032,1032)
+      real yb(1032),xin(1032),vsub(20),rd(20),xi(20)
+      integer ixback(narrm*narrm),iyback(narrm*narrm),iycen(1032)
+      integer iyb(1032),ixall(3),ixsub(20),iysub(20)
+
+      if(iuse.eq.0) return
+
+      diff0=5.5
+      nback=0
+      nb=0
+      do ix=1,1032
+         do iy=1,1032
+            xina(ix,iy)=0.
+         enddo
+      enddo
+      do ix=1,1032
+         do iy=1,1032
+            dmin=1e10
+            do j=1,112
+               y0=xtrace(ix,j)
+               diff=abs(y0-float(iy))
+               dmin=min(dmin,diff)
+            enddo
+            if(dmin.gt.diff0) then
+               nback=nback+1
+               ixback(nback)=ix
+               iyback(nback)=iy
+               if(arr(ix,iy).ne.0) xina(ix,iy)=arr(ix,iy)
+            endif
+         enddo
+      enddo
+
+      nall=0
+      ixall(1)=175
+      ixall(2)=515
+      ixall(3)=855
+      do iall=1,3
+      ix0=ixall(iall)
+      nb=0
+      do iy=1,1032
+         sum=0
+         nsum=0
+         do ix=ix0-170,ix0+170
+            val=xina(ix,iy)
+            if(val.ne.0) then
+               nsum=nsum+1
+               xin(nsum)=val
+            endif
+         enddo
+         if(nsum.gt.0) then
+            call biwgt(xin,nsum,xb,xs)
+            nb=nb+1
+            iyb(nb)=iy
+            yb(nb)=xb
+         endif
+      enddo
+
+      nsum=1
+      sum=yb(1)
+      sumy=1.
+      jold=iyb(1)
+      jd0=2
+      do i=2,nb
+         jnew=iyb(i)
+         jd=jnew-jold
+         if(jd.lt.jd0) then
+            sum=sum+yb(i)
+            sumy=sumy+float(iyb(i))
+            nsum=nsum+1
+         else
+            nall=nall+1
+            ixsub(nall)=ix0
+            iysub(nall)=nint(sumy/float(nsum))
+            vsub(nall)=sum/float(nsum)
+            sumy=iyb(i)
+            sum=yb(i)
+            nsum=1
+         endif
+         jold=jnew
+      enddo
+      nall=nall+1
+      ixsub(nall)=ix0
+      iysub(nall)=nint(sumy/float(nsum))
+      vsub(nall)=sum/float(nsum)
+      enddo
+
+c      do i=1,nall
+c         print *,ixsub(i),iysub(i),vsub(i)
+c      enddo
+
+      do i=1,1032
+         do j=1,1032
+            call xlinint2d(i,j,nall,ixsub,iysub,vsub,xout)
+            xina(i,j)=xout
+         enddo
+      enddo
+
+      do i=1,1032
+         do j=1,1032
+            arr(i,j)=arr(i,j)-xina(i,j)
+         enddo
+      enddo
+      
+c      print *,"Nback ",nback,nall
+
+      return
+      end
+
+      subroutine xlinint2d(i,j,nall,ixsub,iysub,vsub,xout)
+      real vsub(nall),rd(20),xi(20)
+      integer ixsub(nall),iysub(nall)
+
+      imin=ixsub(1)
+      imax=ixsub(nall)
+      if(i.le.imin) then
+         nin=0
+         do iall=1,nall
+            if(ixsub(iall).eq.imin) then
+               nin=nin+1
+               idiff=ixsub(iall)-i
+               jdiff=iysub(iall)-j
+               rdiff=sqrt(float(idiff*idiff)+float(jdiff*jdiff))
+               rd(nin)=rdiff
+               xi(nin)=float(iall)
+            endif
+            call sort2(nin,rd,xi)
+            v1=vsub(nint(xi(1)))
+            v2=vsub(nint(xi(2)))
+            if(rd(1).eq.0) then
+               xout=v1
+            else
+               xnum=v1/rd(1)+v2/rd(2)
+               xden=1./rd(1)+1/rd(2)
+               xout=xnum/xden
+            endif
+         enddo
+         return
+      endif
+      if(i.ge.imax) then
+         nin=0
+         do iall=1,nall
+            if(ixsub(iall).eq.imax) then
+               nin=nin+1
+               idiff=ixsub(iall)-i
+               jdiff=iysub(iall)-j
+               rdiff=sqrt(float(idiff*idiff)+float(jdiff*jdiff))
+               rd(nin)=rdiff
+               xi(nin)=float(iall)
+            endif
+            call sort2(nin,rd,xi)
+            v1=vsub(nint(xi(1)))
+            v2=vsub(nint(xi(2)))
+            if(rd(1).eq.0) then
+               xout=v1
+            else
+               xnum=v1/rd(1)+v2/rd(2)
+               xden=1./rd(1)+1/rd(2)
+               xout=xnum/xden
+            endif
+         enddo
+         return
+      endif
+      do iall=1,nall
+         idiff=ixsub(iall)-i
+         jdiff=iysub(iall)-j
+         rdiff=sqrt(float(idiff*idiff)+float(jdiff*jdiff))
+         rd(iall)=rdiff
+         xi(iall)=float(iall)
+      enddo
+      call sort2(nall,rd,xi)
+      v1=vsub(nint(xi(1)))
+      v2=vsub(nint(xi(2)))
+      v3=vsub(nint(xi(3)))
+      v4=vsub(nint(xi(4)))
+      if(rd(1).eq.0) then
+         xout=v1
+      else
+         xnum=v1/rd(1)+v2/rd(2)+v3/rd(3)+v4/rd(4)
+         xden=1./rd(1)+1/rd(2)+1./rd(3)+1./rd(4)
+         xout=xnum/xden
+      endif
+
+      return
+      end
+
       subroutine extract(arr,xtrace,n,x,xprof,xspec,xspecr,xspecc,
-     $     ifib,iuse)
+     $     iignore,ifib,iuse)
       parameter (narrm=2000)
       real arr(narrm,narrm), xtrace(narrm,narrm),x(n)
       real xprof(1032,112,15),xspec(narrm,112),xin(narrm)
@@ -2513,6 +2867,10 @@ c            print *,wo,xn,rms,rmsmin,woff,soff
       if(iuse.eq.0) rmscut=1e10
       chicut=11.
       if(iuse.eq.0) chicut=1000.
+      if(iignore.eq.1) then
+         rmscut=1000.
+         chicut=1000.
+      endif
 c- cfrac is error assumed on profile to add in quad with noise for chi^2
       cfrac=0.15
 
@@ -3228,10 +3586,10 @@ c            wtrace(i,j)=wtrace(i,j)-woffq
       return
       end
 
-      subroutine fitpoly(n,x,y,iord,nl,xl,yl)
+      subroutine fitpoly(n,x,y,iord,nl,xl,yl,ydiff)
       parameter(nmax=10000,npm=10)
       real x(n),y(n),xl(nl),yl(nl),a(npm),sig(nmax)
-      real covar(npm,npm),alpha(npm,npm)
+      real covar(npm,npm),alpha(npm,npm),ydiff(n)
       integer ia(npm)
       external funcs
 
@@ -3252,6 +3610,10 @@ c            wtrace(i,j)=wtrace(i,j)-woffq
       ia(1)=1
       a(2)=(y(n)-y(1))/(x(n)-x(1))
       ia(2)=1
+      if(iord.eq.2) then
+         a(3)=0.
+         ia(3)=1
+      endif
 
       alamda=-1.
       cold=1.e10
@@ -3270,6 +3632,14 @@ c            wtrace(i,j)=wtrace(i,j)-woffq
 
       do i=1,nl
          yl(i)=a(1)+a(2)*xl(i)
+      enddo
+
+      do i=1,nd
+         if(iord.eq.1) then
+            ydiff(i)=y(i)-(a(1)+a(2)*x(i))
+         else
+            ydiff(i)=y(i)-(a(1)+a(2)*x(i)+a(3)*x(i)*x(i))
+         endif
       enddo
 
       return

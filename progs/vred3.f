@@ -5,9 +5,9 @@
       real spec(1032*112*nfmax),wave(1032*112*nfmax)
       real wmaster(nmax),xmaster(nmax),waves(1036),xata(1036,312)
       real speca(1032,nfmax*112),wavea(1032,nfmax*112)
-      real xftf(1032,nfmax*112),specs(1036,nfmax*112)
-      real waveata(1036),xata1(1036),specsub(1032),wavesub(1032)
-      real xin(1032*112),yin(1032*112),xp(10)
+      real xftf(1032,nfmax*112),specs(1036,nfmax*112),sback(1032,112)
+      real waveata(1036),xata1(1036),specsub(1032,112),wavesub(1032,112)
+      real xin(1032*112),yin(1032*112),xp(10),sin(1032),win(1032)
       real xin2(1032*112),yin2(1032*112),yin3(112),xres(1032,112)
       integer naxes(2),ifibc(112),ipeaks(10)
       character camp*2,cspecid*3,cifu*3,cifupos*3
@@ -35,7 +35,7 @@ c- set iuse to fit calibration from frame (0), or read in calibration (1)
       nwt=17
       wtmin=-1.0
       wtmax=1.0
-      whalf=6.
+      whalf=8.
 
 c- read in all fits files
       open(unit=1,file='list',status='old')
@@ -86,7 +86,7 @@ c- read in amp-to-amp from twilights
       enddo
  666  continue
       close(1)
-      print *,ntt,nta
+      print *,"Fibers, Amplifiers: ",ntt,nta
 
 c- make master sky
       call getmaster(nt,wave,spec,nmaster,wmaster,xmaster,1000,iuse,0)
@@ -146,12 +146,16 @@ c- find the continuum sources
             yin3(j)=xb
          enddo
          call biwgt(xin,nin3,xb,xs)
-         xcut=1.5*xs
+         xs=xs/sqrt(900.)
+c         xcut=1.5*xs
+         xcut=7.0*xs
          ncut=0
          do j=1,112
+            ntt=(iall-1)*112+j
             ifibc(j)=0
             if(yin3(j).gt.xcut) ifibc(j)=1
             if(ifibc(j).eq.1) ncut=ncut+1
+c            print *,ntt,ifibc(j),yin3(j),xs,xcut
          enddo
 
          nin=0
@@ -217,26 +221,40 @@ c- now subtract
          nin=0
          do j=1,112
             ntt=(iall-1)*112+j
+c            if(ifibc(j).eq.1) print *,ntt
             jin=1
             do i=1,1032
                wtry=wavea(i,ntt)+wtmina
                call xlinint2(wtry,nmaster,wmaster,xmaster,
      $              xv,jin,jout)
-               wavesub(i)=wtry
+               wavesub(i,j)=wtry
                if(speca(i,ntt).eq.0.) then
-                  specsub(i)=0.
+                  specsub(i,j)=0.
                else
-                  specsub(i)=speca(i,ntt)-xv*xb
+                  specsub(i,j)=speca(i,ntt)-xv*xb
                endif
                jin=jout
-               if(ifibc(j).eq.0.and.specsub(i).ne.0.) then
+               if(ifibc(j).eq.0.and.specsub(i,j).ne.0.) then
                   nin=nin+1
-                  xin(nin)=specsub(i)
+                  xin(nin)=specsub(i,j)
                endif
+            enddo
+         enddo
+         call getback(specsub,ifibc,sback)
+         do j=1,112
+            ntt=(iall-1)*112+j
+            do i=1,1032
+               win(i)=wavesub(i,j)
+               if(ncut.lt.40) then
+                  sin(i)=specsub(i,j)-sback(i,j)
+               else
+                  sin(i)=specsub(i,j)
+               endif
+c               sin(i)=sback(i,j)
             enddo
             jin=1
             do i=1,1036
-               call xlinint2(waves(i),1032,wavesub,specsub,xv,jin,jout)
+               call xlinint2(waves(i),1032,win,sin,xv,jin,jout)
                specs(i,ntt)=xv
                jin=jout
             enddo
@@ -296,6 +314,108 @@ c- write out the sky-subtracted and rectified fits file
  1302 format("# text("i2,", ",i5,
      $     ") textangle=90 text={"a14"} color=red")
 
+      end
+
+      subroutine getback(specsub,ifibc,sback)
+      real specsub(1032,112),sback(1032,112),xin(1032*10)
+      real xin1(1032*10),xin2(1032*10),xin3(1032*10)
+      real xla(3),xba(3)
+      integer ifibc(112),ila(4)
+
+      ifibh=3
+      ispech=20
+      ilo=300
+      ihi=800
+
+      ila(1)=100
+      ila(2)=400
+      ila(3)=700
+      ila(4)=1000
+      xla(1)=float(ila(1)+ila(2))/2.
+      xla(2)=float(ila(2)+ila(3))/2.
+      xla(3)=float(ila(3)+ila(4))/2.
+
+c - get a smoothed background: iback=0 is by fiber, 1 is very local                                                                                                     
+      iback=0
+      if(iback.eq.0) then
+         do j=1,112
+            jlo=max(1,j-ifibh)
+            jhi=min(112,j+ifibh)
+            nin=0
+            nin1=0
+            nin2=0
+            nin3=0
+            do jt=jlo,jhi
+               if(jt.ne.j) then
+                  if(ifibc(jt).eq.0) then
+c                     do i=ilo,ihi
+c                        nin=nin+1
+c                        xin(nin)=specsub(i,jt)
+c                     enddo
+                     do i=ila(1),ila(2)
+                        nin1=nin1+1
+                        xin1(nin1)=specsub(i,jt)
+                     enddo
+                     do i=ila(2),ila(3)
+                        nin2=nin2+1
+                        xin2(nin2)=specsub(i,jt)
+                     enddo
+                     do i=ila(3),ila(4)
+                        nin3=nin3+1
+                        xin3(nin3)=specsub(i,jt)
+                     enddo
+                  endif
+               endif
+            enddo
+            if(nin1.gt.0.and.nin2.gt.0.and.nin3.gt.0) then
+               call biwgt(xin1,nin1,xba(1),xs1)
+               call biwgt(xin2,nin2,xba(2),xs2)
+               call biwgt(xin3,nin3,xba(3),xs3)
+               jin=1
+               do i=1,1032
+                  call xlinint2b(float(i),3,xla,xba,xb0,jin,jout)
+                  jin=jout
+                  sback(i,j)=xb0
+               enddo
+            else
+c            if(nin.ge.1) then
+c               call biwgt(xin,nin,xb,xs)
+c               do i=1,1032
+c                  sback(i,j)=xb
+c               enddo
+               do i=1,1032
+                  sback(i,j)=0.
+               enddo
+            endif
+         enddo
+      else
+         do j=1,112
+            jlo=max(1,j-ifibh)
+            jhi=min(112,j+ifibh)
+            do i=1,1032
+               ilo2=max(1,i-ispech)
+               ihi2=min(1032,i+ispech)
+               nin=0
+               do jt=jlo,jhi
+                  if(ifibc(jt).eq.0) then
+                     do it=ilo2,ihi2
+                        nin=nin+1
+                        xin(nin)=specsub(it,jt)
+                     enddo
+                  endif
+               enddo
+               if(nin.ge.1) then
+                  call biwgt(xin,nin,xb,xs)
+                  sback(i,j)=xb
+               else
+                  sback(i,j)=0.
+               endif
+            enddo
+         enddo
+      endif
+
+
+      return
       end
 
       subroutine getftf(nmaster,wmaster,xmaster,nta,wavea,speca,

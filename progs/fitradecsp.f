@@ -31,13 +31,14 @@ c        101 spectra within and then ifit=1 at input wavelength
 c        102 spectra within, then ifit=1, then run mc at input wavelength, then do mc on best
 c        103 spectra within and then ifit=3
 c        104 spectra within, and then fit at every fiber and wavelength in IFU, then do mc on best
-c        105 flux limit at each fiber center (enter with .... 0 1 105)
+c        105 flux limit at each fiber center (enter with .... stepsize 1 105)
 c        106 just generate calib and calibe fits files for all exp and amps, and then exit
 c        107 fit spatial (like -1 before)
 c        108 fit fwhm (like -2 before)
 c        109 same as 2
 c        110 simulation at individual input and extract at just that input
 c        111 simualtion at input list and then run as 104, full IFU search
+c        2?? same as 1??, but check for high linewidths
 c       -100 or less means use native spectral binning
 
       rd=3.
@@ -55,10 +56,16 @@ c- inative=0 means rectify, inative=1 means native
          inative=1
       endif
 
+      isighi=0
+      if(ifit1.gt.199) then
+         ifit1=ifit1-100
+         isighi=1
+      endif
+
 c- get the individual spectra; ntf is number of spectra
       ifit1o=ifit1
       call getspec(ifit1,ra,dec,wa,fa,fea,fa2,fea2,fweight,fweight2,
-     $     nwa,ntf,raf,decf,az,cfield,rad0,iexp,inative)
+     $     nwa,ntf,raf,decf,az,cfield,rad0,iexp,inative,ratzero)
 
       if(ifit1o.eq.100) ifit1=2
       if(ifit1o.eq.106) goto 767
@@ -69,37 +76,44 @@ c- get the individual spectra; ntf is number of spectra
       if(ifit1.eq.-1.or.ifit1.eq.-2) radmaxfit=7.
 
 c- negative sigin means fix, positive means float
-      sigin=-3.0
+      sig3=3.0
+      sig2p5=2.5
+      sig8=8.0
+      sigin=-sig3
       if(ifit1o.eq.102) ifit1=1
-      if(ifit1.eq.1) sigin=-2.5
+      if(ifit1.eq.1) sigin=-sig2p5
 
 c- if doing source simulations, add sources into fibers (naf=Nwave, ntf=Nfib)
       ier=0
       if(ifit1o.eq.110) then
          call addem(rfw,nwa,ntf,raf,decf,wa,fa2,fea2,fea,
-     $        nem,raem,decem,waveem,ier)
+     $        nem,raem,decem,waveem,isighi,ier)
          ifit1=1
-         sigin=-2.5
+         sigin=-sig2p5
          if(ier.eq.1) goto 767
       endif
       if(ifit1o.eq.111) then
          call addem(rfw,nwa,ntf,raf,decf,wa,fa2,fea2,fea,
-     $        nem,raem,decem,waveem,ier)
+     $        nem,raem,decem,waveem,isighi,ier)
 c         ifit1=1
-         sigin=-2.5
+         sigin=-sig2p5
          ifit1o=104
          if(ier.eq.1) goto 767
       endif
-      sigin0=sigin
       
 c- make the rastered search of RA,DEC: na is number of positions
       call mkraster(ra,dec,step,nstep,ara,adec,awave,rad0,
      $     na,ntf,raf,decf,nem,raem,decem,waveem,ifit1o)
 c- integrate spectrum to get value for fitting PSF weights
-      call getfl2d(wa,fa,fea,fweight,nwa,ntf,wcen,wrange,
+      call getfl2d(wa,fa,fea,fweight2,nwa,ntf,wcen,wrange,
      $     sflux,sfluxe,xw)
 
       if(ifit1.ge.0) wrange=50.
+      if(isighi.eq.1) then
+         wrange=80.
+         sigin=-sig8
+      endif
+      sig0=abs(sigin)
 
       nt=0
       print *,"Number of samplings: ",na,ntf
@@ -127,6 +141,7 @@ c- sum weighted by the PSF weights
      $              weight,iflag,iexp,fadcw,az,nspec,spec,sumrata)
                if(nspec.eq.0) goto 765
             endif
+
             if(ifit1.eq.2) goto 801
 c- check if spectrum is any good (not all zeros)
             call checkspec(nspec,spec,ibad)
@@ -242,19 +257,21 @@ c- sum weighted by the PSF weights
             endif
 c- get change in chi^2 if floating the linewidth
             nsim=1
-            call fitspec(nspec,spec,-2.5,wcen,wrange,ifit1,ifit1o,
+            sigin=-sig0
+            call fitspec(nspec,spec,sigin,wcen,wrange,ifit1,ifit1o,
      $           nsim,cfield,ra,dec,nout,fitout,xoutv,xouts,
      $           nflim,flimw,flimv,flima,ratnoise,1)
             fsig1=fitout(1,3)
             fchi1=fitout(1,6)
-            call fitspec(nspec,spec,2.5,wcen,wrange,ifit1,ifit1o,
+            sigin=sig0
+            call fitspec(nspec,spec,sigin,wcen,wrange,ifit1,ifit1o,
      $           nsim,cfield,ra,dec,nout,fitout,xoutv,xouts,
      $           nflim,flimw,flimv,flima,ratnoise,1)
             fsig2=fitout(1,3)
             fchi2=fitout(1,6)
 c- now get the full monte carlo
             nsim=100
-            sigin=2.5
+            sigin=sig0
             call fitspec(nspec,spec,sigin,wcen,wrange,ifit1,ifit1o,
      $           nsim,cfield,ra,dec,nout,fitout,xoutv,xouts,
      $           nflim,flimw,flimv,flima,ratnoise,1)
@@ -281,7 +298,7 @@ c- first get those that match in radius and wavelength
                   wcen=fitp(i,3)
                   wrange=50.
 c                  sigin=2.5
-                  sigin=-2.5
+                  sigin=-sig0
                   ifit1=1
                   call getint(ra,dec,ntf,raf,decf,radmaxfit,intuse)
                   call fit2d(ra,dec,rfw,ntf,sflux,sfluxe,raf,decf,
@@ -313,7 +330,7 @@ c- get change in chi^2 if floating the linewidth
                   fchi2=fitout(1,6)
 c- now get the full monte carlo
                   nsim=100
-                  sigin=2.5
+                  sigin=sig0
                   call fitspec(nspec,spec,sigin,wcen,wrange,ifit1,
      $                 ifit1o,
      $                 nsim,cfield,ra,dec,nout,fitout,xoutv,xouts,
@@ -348,7 +365,7 @@ c- now get the full monte carlo
       endif
       close(11)
 
-      if(ifit1.ge.1) call writespec(nspec,spec)
+      if(ifit1.ge.1) call writespec(nspec,spec,ratzero)
       if(ifit1.eq.2) then
          nin=0
          do i=1,naf
@@ -448,7 +465,7 @@ c 1201 format(f10.6,1x,f11.6,1x,f6.1,1x,f8.3,2(1x,f7.2),1x,f6.3)
  1301 format(3(1x,f10.3))
       end
 
-      subroutine writespec(n,spec)
+      subroutine writespec(n,spec,ratzero)
       parameter(nmax=1500)
       real spec(nmax*10,9)
       
@@ -456,9 +473,9 @@ c 1201 format(f10.6,1x,f11.6,1x,f6.1,1x,f8.3,2(1x,f7.2),1x,f6.3)
       do i=1,n
          write(13,1301) spec(i,1),spec(i,3),spec(i,5),
      $        spec(i,2),spec(i,4),spec(i,6),spec(i,7),
-     $        spec(i,8),spec(i,9)
+     $        spec(i,8),spec(i,9),ratzero
       enddo
- 1301 format(1x,f7.2,8(1x,f11.3))
+ 1301 format(1x,f7.2,9(1x,f11.3))
 
       return
       end
@@ -544,7 +561,7 @@ c 1201 format(f10.6,1x,f11.6,1x,f6.1,1x,f8.3,2(1x,f7.2),1x,f6.3)
       end
 
       subroutine addem(rfw,nwa,ntf,raf,decf,wa,fa,fea,feac,
-     $     nem,raem,decem,waveem,ier)
+     $     nem,raem,decem,waveem,isighi,ier)
       parameter(nmax=1500,nfmax=1500)
       real raf(nfmax),decf(nfmax),xfa(nfmax),wvadd(nmax)
       real wa(nfmax,nmax),fa(nfmax,nmax),fea(nfmax,nmax)
@@ -552,7 +569,11 @@ c 1201 format(f10.6,1x,f11.6,1x,f6.1,1x,f8.3,2(1x,f7.2),1x,f6.3)
       integer nwa(nfmax)
       parameter(pi=3.141593e0,radtodeg=57.29578)
 
-      wsig=2.3
+      if(isighi.eq.1) then
+         wsig=8.0
+      else
+         wsig=2.3
+      endif
       dwave=2.0
 
       open(unit=3,file='sources.in',status='old',err=666)
@@ -845,6 +866,8 @@ c - this routine finds the wavelength with the highest S/N within wd
          nin=0
          do j=1,nwa(i)
             if(wa(i,j).gt.w1.and.wa(i,j).lt.w2.and.fa(i,j).ne.0) then
+c            if(wa(i,j).gt.w1.and.wa(i,j).lt.w2.and.fa(i,j).ne.0
+c     $           .and.fweight(i,j).ne.0) then
                nin=nin+1
                xin(nin)=fa(i,j)
                xin2(nin)=fea(i,j)*fea(i,j)
@@ -873,7 +896,8 @@ c - this routine finds the wavelength with the highest S/N within wd
       end
 
       subroutine getspec(ifit1,ra0,dec0,wa,fa,fea,fa2,fea2,
-     $     fweight,fweight2,nwa,ntf,ra,dec,az,cfield,rad0,iexp,inative)
+     $     fweight,fweight2,nwa,ntf,ra,dec,az,cfield,rad0,iexp,inative,
+     $     ratzero)
       parameter(nmax=1500,nfmax=1500,namax=1036,numax=12)
       real*8 dx1,dx2,drad,dra,ddec
       real wa(nfmax,nmax),fa(nfmax,nmax),fea(nfmax,nmax)
@@ -892,6 +916,7 @@ c - this routine finds the wavelength with the highest S/N within wd
       real chi2a(numax,namax,112),xchi2(namax,112)
       real chimapa(numax,namax,112),chimap(namax,112)
       real resmapa(numax,namax,112),resmap(namax,112)
+      real ratmapa(numax,namax,112),ratmap(namax,112)
       real xflaga(numax,namax,1032),xflag(namax,1032)
       real f1out(nmax,nfmax),f2out(nmax,nfmax),fin(6,namax)
       real f3out(nmax,nfmax),f4out(nmax,nfmax),wavein(1036),xin(1036)
@@ -901,9 +926,9 @@ c - this routine finds the wavelength with the highest S/N within wd
       character file2*80,file3*120,cfield*12,cdate*8,cshot*3
       character a1*6,a2*28,a3*20,a4*5,file1*120
       character file1a(nfmax)*120,file2a(nfmax)*120,cexp*2,camp*2
-      character file3a(nfmax)*120,file4a(nfmax)*120
+      character file3a(nfmax)*120,file4a(nfmax)*120,file5a(nfmax)*120
       character f1uniq(nfmax)*120,f2uniq(nfmax)*120,ctmp*120
-      character f3uniq(nfmax)*120,f4uniq(nfmax)*120
+      character f3uniq(nfmax)*120,f4uniq(nfmax)*120,f5uniq(nfmax)*120
       character a2out(nfmax)*28,a4out(nfmax)*5,a3out(nfmax)*20
 
       if(ifit1.lt.100) then
@@ -985,6 +1010,9 @@ c- get the dither file and find the fibers
          ddec=dble(dec0)
          ntf=0
          nuniq=0
+         nzero=0
+         nzero2=0
+         ntotall=0
          do i=1,200000
             read(1,*,end=765) dx1,dx2,a1,x4,x5,x6,x7,a2,a3,a4
             drad=3600.d0*dsqrt(
@@ -1008,6 +1036,9 @@ c- get the chi^2 map
 c- get the residual map
                file4a(ntf)="/data/00115/gebhardt/lib_calib/reschi"
      $              //"/res"//a2(7:9)//a2(19:20)//".fits"
+c- get the error ratio map
+               file5a(ntf)="/data/00115/gebhardt/lib_calib/reschi"
+     $              //"/rres"//a2(7:9)//a2(19:20)//".fits"
                if(a4(1:5).eq."exp01") xrelna(ntf)=xn1
                if(a4(1:5).eq."exp02") xrelna(ntf)=xn2
                if(a4(1:5).eq."exp03") xrelna(ntf)=xn3
@@ -1039,6 +1070,7 @@ c     $              w0,a3,cdate,cshot
                   f2uniq(nuniq)=file2a(ntf)
                   f3uniq(nuniq)=file3a(ntf)
                   f4uniq(nuniq)=file4a(ntf)
+                  f5uniq(nuniq)=file5a(ntf)
                   xreluniq(nuniq)=xrelna(ntf)
                else
                   do iu=1,nuniq
@@ -1051,6 +1083,7 @@ c     $              w0,a3,cdate,cshot
                      f2uniq(nuniq)=file2a(ntf)
                      f3uniq(nuniq)=file3a(ntf)
                      f4uniq(nuniq)=file4a(ntf)
+                     f5uniq(nuniq)=file5a(ntf)
                      xreluniq(nuniq)=xrelna(ntf)
                   endif
                endif
@@ -1063,8 +1096,8 @@ c     $              w0,a3,cdate,cshot
          do i=1,nuniq
 c- get the multifits
             call getmulti(f1uniq(i),f2uniq(i),f3uniq(i),f4uniq(i),
-     $           nas,was,fas,az0,waved,skysub,ftf,skymod,trace,
-     $           xflag,xchi2,chimap,resmap)
+     $           f5uniq(i),nas,was,fas,az0,waved,skysub,ftf,skymod,
+     $           trace,xflag,xchi2,chimap,resmap,ratmap)
             naa(i)=nas
             do j=1,nas
                wasa(i,j)=was(j)
@@ -1081,6 +1114,7 @@ c- get the multifits
                   chi2a(i,j,k)=xchi2(j,k)
                   chimapa(i,j,k)=chimap(j,k)
                   resmapa(i,j,k)=resmap(j,k)
+                  ratmapa(i,j,k)=ratmap(j,k)
                enddo
                do k=1,1032
                   xflaga(i,j,k)=xflag(j,k)
@@ -1116,6 +1150,7 @@ c- now loop over all input fibers
                   xchi2(j,k)=chi2a(iu,j,k)
                   chimap(j,k)=chimapa(iu,j,k)
                   resmap(j,k)=resmapa(iu,j,k)
+                  ratmap(j,k)=ratmapa(iu,j,k)
                enddo
                do k=1,1032
                   xflag(j,k)=xflaga(iu,j,k)
@@ -1137,7 +1172,7 @@ c- get X,Y on detector
             w0=4505.
             ww=1035.
             call getspec2(nas,was,fas,waved,skysub,ftf,
-     $           skymod,trace,xflag,xchi2,chimap,resmap,
+     $           skymod,trace,xflag,xchi2,chimap,resmap,ratmap,
      $           ntp,wtp,tp,xrelnorm,w0,ww,
      $           ifib,na1,wa1,fa1,fea1,fa21,fea21,fweight1,fweight21,
      $           fin,inative)
@@ -1186,6 +1221,9 @@ c- get X,Y on detector
                f2out(j,ifibamp)=fin(2,j)
                f3out(j,ifibamp)=fin(3,j)*1.e17
                f4out(j,ifibamp)=fin(4,j)*1.e17
+               if(fa(i,j).eq.0.) nzero=nzero+1
+               if(fin(1,j).eq.0.) nzero2=nzero2+1
+               ntotall=ntotall+1
             enddo
             na=na1
 c            print *,cexp,camp
@@ -1198,6 +1236,13 @@ c            print *,iu,f2uniq(iu)
          if(il1.eq.1) close(12)
          if(ifit1.eq.106) call writefits(ntf,f1out,f2out,f3out,f4out)
          ifit1=ifit1-100
+      endif
+
+      if(ntotall.gt.0) then
+c         ratzero=100.*float(nzero)/float(ntotall)
+         ratzero=100.*float(nzero2)/float(ntotall)
+      else
+         ratzero=0.
       endif
 
  2012 format(2(f11.7,1x),2(1x,f8.3),1x,a28,1x,a5,
@@ -1240,18 +1285,18 @@ c            print *,iu,f2uniq(iu)
       return
       end
 
-      subroutine getmulti(file1,file2,file3,file4,
+      subroutine getmulti(file1,file2,file3,file4,file5,
      $     na,wa,fa,az0,waved,skysub,ftf,skymod,trace,xflag,xchi2,
-     $     chimap,resmap)
+     $     chimap,resmap,ratmap)
       parameter(namax=1036)
       real wa(namax),fa(namax)
       real waved(namax,112),skymod(namax,112),ftf(namax,112)
       real skysub(namax,112),trace(namax,112),xflag(namax,1032)
       real xchi2(namax,112),xin(namax*112)
-      real chimap(namax,112),resmap(namax,112)
+      real chimap(namax,112),resmap(namax,112),ratmap(namax,112)
       integer naxes(2)
       character file1*120,file2*120,filet*80
-      character file3*120,file4*120
+      character file3*120,file4*120,file5*120
       logical simple,extend,anyf
 
 c- getting the amp2amp                                                                                                               
@@ -1411,12 +1456,33 @@ c - this is the residual map
             enddo
          enddo
       endif
+
+c - this is the error ratio map
+      ier=0
+      call ftopen(im1,file5,iread,iblock,ier)
+      if(ier.eq.0) then
+         iext=1
+         call ftmahd(im1,iext,ihd,ier)
+         call ftghpr(im1,2,simple,ibit,naxis,naxes,ipc,igc,extend,ier)
+         ncol=naxes(1)
+         nrow=max(1,naxes(2))
+         call ftg2de(im1,igc,0.,namax,ncol,nrow,ratmap,anyf,ier)
+         call ftclos(im1,ier)
+      else
+         print *,"Not here: ",file5
+         ier=0
+         do j=1,112
+            do i=1,1032
+               ratmap(i,j)=1.
+            enddo
+         enddo
+      endif
          
       return
       end
 
       subroutine getspec2(nas,was,fas,wavedi,skysub,ftf,
-     $           skymod,xtrace,xflag,xchi2,chimap,resmap,
+     $           skymod,xtrace,xflag,xchi2,chimap,resmap,ratmap,
      $           ntp,wtp,tp,xrelnorm,w0,ww,
      $           ifib,nw,wave,fa1,fea1,fa21,fea21,fweight1,fweight21,
      $           fin,inative)
@@ -1430,6 +1496,8 @@ c - this is the residual map
       real xsp(namax),f2f(namax),sky(namax),trace(namax),flag(namax)
       real fin(6,namax),fout(6,namax),ypa(namax),yerra(namax)
       real yweight(namax),chimap(namax,112),resmap(namax,112)
+      real ratmap(namax,112),raterr(namax),raterrs(namax)
+      real residual(namax),residuals(namax),ftfs(namax)
       real skymod(namax,112),yerrb(namax),skys(namax),xchi2(namax,112)
       integer iwave(namax),naxes(2)
       character file1*120,file2*80,filet*80
@@ -1461,6 +1529,17 @@ c - this is the residual map
       do i=1,n
          xres=skymod(iwave(i),ifib)*resmap(iwave(i),ifib)
          xsp(i)=skysub(iwave(i),ifib)-xres
+c         ilo=max(1,i-3)
+c         ihi=min(n,i+3)
+c         sum=0.
+c         ns=0
+c         do ix=ilo,ihi
+c            sum=sum+abs(resmap(iwave(ix),ifib))
+c            ns=ns+1
+c         enddo
+c         sum=sum/float(ns)
+c         if(ifib.eq.41) print *,i,wave(i),sum,resmap(iwave(i),ifib)
+c         if(abs(resmap(iwave(i),ifib)).gt.0.1) ftf(iwave(i),ifib)=0.
       enddo
 
 c - normalize by f2f
@@ -1474,6 +1553,8 @@ c - normalize by f2f
             trace(i)=xtrace(iwave(i),ifib)
 c            chi2(i)=xchi2(iwave(i),ifib)
             chi2(i)=chimap(iwave(i),ifib)
+            raterr(i)=ratmap(iwave(i),ifib)
+            residual(i)=resmap(iwave(i),ifib)
             flag(i)=xflag(iwave(i),nint(trace(i)))
          else
             xftf=1.
@@ -1508,9 +1589,27 @@ c- for chi2, get the nearest col
          call xlinint2(wave(i),n,waved,chi2,chi2s(i),jin,jout)
          jin=jout
       enddo
+c- for rat error
+      jin=1
+      do i=1,nw
+         call xlinint2(wave(i),n,waved,raterr,raterrs(i),jin,jout)
+         jin=jout
+      enddo
+c- for residual
+      jin=1
+      do i=1,nw
+         call xlinint2(wave(i),n,waved,residual,residuals(i),jin,jout)
+         jin=jout
+      enddo
+c- for ftf
+      jin=1
+      do i=1,nw
+         call xlinint2(wave(i),n,waved,f2f,ftfs(i),jin,jout)
+         jin=jout
+      enddo
 
 c- get the sqrt(n) errors. First smooth skysub and add to skymod.
-c  Second, take sqrt and add in rnoise*4pixels (just make rn 3 for all)
+c  Second, take sqrt and add in rnoise*3pixels (just make rn 3 for all)
       rnoise=3.
       nh1=1
       nh2=5
@@ -1543,7 +1642,20 @@ c  Second, take sqrt and add in rnoise*4pixels (just make rn 3 for all)
          stot=skys(i)+max(0.,s1)
 c- add in read noise and then some fraction of sky (for poor subtraction)
          stots=sqrt(stot+3.*rnoise*rnoise)
-         yerrb(i)=sqrt(stots*stots+(0.03*stot)**2)
+         if(abs(residuals(i)).lt.0.06) then
+            skyerrf=0.03
+         else
+            skyerrf=0.06
+         endif
+         yerrb(i)=sqrt(stots*stots+(skyerrf*stot)**2)
+         ratmult=1.
+         if(raterrs(i).gt.1.03) then
+            ratmult=1.+(raterrs(i)-1.)/(1.5-1.)*3.
+            yerrb(i)=yerrb(i)*ratmult
+         endif
+         if(ftfs(i).gt.0) yerrb(i)=yerrb(i)/ftfs(i)
+
+c         if(ifib.eq.89) print *,wave(i),yerrb(i),raterrs(i),ftfs(i)
 c- make is smaller by yweight since we are interpolating for a uniform grid
 c         yerrb(i)=yerrb(i)/yweight(i)
 c         yerrb(i)=yerrb(i)*yweight(i)
@@ -1632,7 +1744,7 @@ c            fa1(i)=yp/yfp
             fa21(i)=0.
             fea21(i)=0.
             fweight1(i)=yfp*ytp
-            fweight21(i)=1.
+            fweight21(i)=0.
          endif
       enddo
 
@@ -2333,6 +2445,7 @@ c      fcut=0.01
                fa2n(nn,j)=fa2(i,j)
                fea2n(nn,j)=fea2(i,j)
                fweight2n(nn,j)=fweight2(i,j)
+c               print *,i,j,fweight2n(nn,j)
 c               if(wan(nn,j).gt.5055.and.wan(nn,j).lt.5155) then
 c                  nin=nin+1
 c                  xin(nin)=fan(nn,j)
@@ -2406,6 +2519,7 @@ c - first get normalization for each wavelength
                call xlinint(x1,nw,wv,wn,fadc)
                gnw(i)=gnw(i)+gna0(il)*fadc
 c               gnw(i,il)=gnw(i,il)+gna0(il)*fadc
+c               print *,il,i,x1,gnw(i)
             enddo
          endif
       enddo
@@ -2478,7 +2592,7 @@ c         spec(i,8)=fac2
          if(gsum(i).gt.0) xdum=fw2(i)/gsum(i)
          if(xdum.gt.0) then
             spec(i,8)=1./xdum
-            spec(i,8)=1.
+c            spec(i,8)=1.
          else
             spec(i,8)=0.
          endif
@@ -2636,9 +2750,10 @@ c- get flux limits for 105 and then return
          sigg=signsl
 c         xnp=4.*sigg
 c         xnp=xnp/pixsize
-         xnp=1.5*sigg
+         xnp=4.*sigg
+         xnp=xnp/pixsize
          xnp=max(3.,xnp)
-         nflimh=1
+         nflimh=3
          do iw=1,nw
             wfit=spec(iw,1)
 c - get noise from the errors
