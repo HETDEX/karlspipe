@@ -1,7 +1,0 @@
-ifu=$1
-grep ${ifu} list3all > list2
-~gebhardt/bin/plotfibpos << eof
-/vcps
-eof
-~/bin/convpng pgplot
-mv pgplot.png ${ifu}wfib.png

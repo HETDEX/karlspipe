@@ -1,2 +1,0 @@
-cd $1_$2
-/work/00115/gebhardt/maverick/scripts/rsp/rgetsumfib $1 $2
