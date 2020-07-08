@@ -1,0 +1,7 @@
+ifu=$1
+~gebhardt/bin/plotcaliball << eof
+${ifu}
+/vcps
+eof
+~/bin/convpng pgplot
+mv pgplot.png ${ifu}calib.png

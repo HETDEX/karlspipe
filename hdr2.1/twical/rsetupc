@@ -1,0 +1,30 @@
+mth=$1
+mkdir -p cal${mth}
+mkdir -p lib_calib/${mth}
+cd cal${mth}
+cp /work/00115/gebhardt/maverick/gettar/rt*.${mth} .
+cp /work/00115/gebhardt/maverick/gettar/runt${mth} .
+cp /data/00115/gebhardt/calscripts/* .
+sed -i s/ChangeMe/${mth}/ run1t
+
+rm -f rt1.${mth}_* rt1b.${mth}_* rt2.${mth}_*
+~/jobsplitter2w rt1.${mth} 8 8 "06:00:00"
+~/jobsplitter2w rt1b.${mth} 8 8 "02:00:00"
+cp rt1b.${mth} rt
+cp ~gebhardt/rt.slurm .
+~/jobsplitter2w rt2.${mth} 8 4 "01:00:00"
+~gebhardt/bin/rslurm rt1.${mth} > rstep1
+~gebhardt/bin/rslurm rt1b.${mth} > rstep2
+cp rt1c.${mth} rstep3
+~gebhardt/bin/rslurm rt2.${mth} > rstep4
+cp rt3.${mth} rstep5
+cp rt1c.${mth} rstep6
+chmod +x rstep?
+
+cd ..
+mkdir -p sci${mth}
+cd sci${mth}
+cp /work/00115/gebhardt/maverick/gettar/runs${mth} .
+awk '{print "run1s",$2,$3,$4,$7}' runs${mth} | sort -g  | uniq > rt1s
+cp /data/00115/gebhardt/sciscripts/* .
+sed -i s/ChangeMe/${mth}/ run1s

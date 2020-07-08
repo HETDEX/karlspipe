@@ -1,0 +1,16 @@
+in=$1
+out=$2
+spec=$3
+rm -f in.fits improc.fits
+echo $in > j1
+sed s/"\/"/" "/ j1 > j2
+sed s/"\/"/" "/ j2 > j1
+sed s/"\/"/" "/ j1 > j2
+awk '{print "rgfits0 /work/03946/hetdex/maverick/"$1"/virus/"$3".tar",$3"/"$4,in0}' in0=${in} j2 > rj2
+chmod +x rj2
+rj2
+
+echo \"$in\" $spec > improcn.in
+~gebhardt/bin/improcn
+mv improc.fits norm${out}.fits
+mv out norm${out}.dat

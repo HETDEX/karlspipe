@@ -1,0 +1,5 @@
+spec=$1
+amp=$2
+awk '{print "ls /data/00115/gebhardt/red1/reductions/"$1"/virus/virus0000"$2"/exp??/virus/multi_"spec0"_???_???_"amp0".fits"}' spec0=$spec amp0=$amp list2 > rt
+chmod +x rt
+rt | awk '{print "\""$1"\""}'

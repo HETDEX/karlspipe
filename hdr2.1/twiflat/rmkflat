@@ -1,0 +1,12 @@
+spec=$1
+mth=$2
+mkdir -p spec${spec}
+cd spec${spec}
+cp ../rflat .
+cp ../rback .
+cp ../run2 .
+mkdir -p tmp
+awk '{if($6==spec0) print $1,$2,$3,$4,$5,$6,$7,-1}' spec0=${spec} /data/00115/gebhardt/cal${mth}/runt2* > rt
+chmod +x rt
+rt
+run2 ${spec} ${mth}

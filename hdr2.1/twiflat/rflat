@@ -1,0 +1,7 @@
+name=$1
+rm -f imar.fits imar2.fits
+~gebhardt/bin/imar_flt << eof
+${name}.fits
+eof
+mv imar.fits ${name}_f.fits
+mv imar2.fits ${name}_f2.fits

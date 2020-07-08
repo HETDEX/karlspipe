@@ -1,0 +1,28 @@
+scale_lo=2
+scale_hi=10
+ifu=$1
+mth=$2
+spec=$3
+amp=$4
+cd ${mth}bias
+dir1=$(pwd)
+cd /tmp
+mkdir -p ${mth}i${ifu}
+cd ${mth}i${ifu}
+grep ${ifu}${amp}_zro.fits /work/00115/gebhardt/maverick/gettar/${mth}tarlist | grep virus0000 > ${amp}.list
+
+cp /work/00115/gebhardt/maverick/scripts/bias/rbfits .
+cp /work/00115/gebhardt/maverick/scripts/bias/rbfits0 .
+cp /work/00115/gebhardt/maverick/scripts/bias/rimcmb .
+
+awk '{s+=1; print "rbfits",$1,s,spec0"_"amp0}' amp0=$amp spec0=$spec ${amp}.list > rj1
+chmod +x rj1
+rm -f norm*.fits norm*.dat imcmb.fits imbox.fits
+rj1
+grep . norm*dat | awk '{if($4>lo0&&$4<hi0) print $1,$4,$6}' lo0=$scale_lo hi0=$scale_hi | sed s/.dat:/.fits/ > inlist
+~gebhardt/bin/mkbiaslist
+awk '{print "rimcmb",$1,$2,dir0,mth0,ifu0,spec0,amp0}' dir0=$dir1 mth0=$mth ifu0=$ifu spec0=$spec amp0=$amp olist  > rj3
+chmod +x rj3
+rj3
+cd ..
+rm -rf ${mth}i${ifu}

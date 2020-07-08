@@ -1,0 +1,8 @@
+spec=$1
+mkdir -p calfix${spec}
+cd calfix${spec}
+mkdir -p tmp
+awk '{if($6==spec0) print $1,$2,$3,$4,$5,$6,$7,0}' spec0=$spec /work/00115/gebhardt/maverick/gettar/runt20???? > rt
+cp /data/00115/gebhardt/fixspec/rback_cal rback
+chmod +x rt
+echo "cd calfix${spec}"

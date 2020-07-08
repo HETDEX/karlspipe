@@ -1,0 +1,8 @@
+# awk '{if($1>0) print $0}' ../../../fplane.use  > old
+awk '{if($1>0) print $0}' ../../../fplane.20190328  > old
+awk '{if($1>0) print $0}' ../../../fplane.20191218  > old
+awk '{if($1>0) print $0}' fp2020  > old
+awk '{if($1>0) print $0}' ../../../fplane.0  > nominal
+grep . *off.dat | sed s/"off.dat:"/" "/ > offall
+./getnewifu
+cat ifuhead out > new

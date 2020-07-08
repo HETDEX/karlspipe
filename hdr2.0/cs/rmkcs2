@@ -1,0 +1,5 @@
+cd fitres
+ls 2*res | awk '{print "../rgetbest",$1}' | sed s/.res// | sed s/_/" "/ > rt
+chmod +x rt
+rt > ../rext1
+

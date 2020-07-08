@@ -1,0 +1,24 @@
+mth=$1
+mkdir -p sci${mth}
+cd sci${mth}
+cp /work/00115/gebhardt/maverick/gettar/runs${mth} .
+awk '{print "run1s",$2,$3,$4,$7}' runs${mth} | sort -g  | uniq > rt1s
+cp /data/00115/gebhardt/sciscripts/* .
+sed -i s/ChangeMe/${mth}/ run1s
+sed -i s/ChangeMe/${mth}/ rtaremc
+rm -f rt1s_* runtar0e_*
+#~gebhardt/jobsplitter2w rt1s 10 10 "16:00:00"
+~gebhardt/jobsplitter2w rt1s 10 4 "16:00:00"
+~gebhardt/bin/rslurm rt1s > rstep1
+awk '{print "runtar",$2,$3,$4}' rt1s > runtar0
+chmod +x runtar0
+echo "sbatch runtar0.slurm" > rstep2
+rm -f runtar0_*
+#~gebhardt/jobsplitter2w runtar0 10 40 "10:00:00"
+~gebhardt/jobsplitter2w runtar0 10 10 "10:00:00"
+~gebhardt/bin/rslurm runtar0 > rstep2
+awk '{print "rtaremc",$2,$3,$4}' rt1s > runtar0e
+chmod +x runtar0e
+~gebhardt/jobsplitter2w runtar0e 10 40 "10:00:00"
+~gebhardt/bin/rslurm runtar0e > rstep3
+chmod +x rstep?

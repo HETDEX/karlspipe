@@ -1,0 +1,4 @@
+/work/00115/gebhardt/maverick/scripts/bias/rpbias1 $1 $2 $3 LL
+/work/00115/gebhardt/maverick/scripts/bias/rpbias1 $1 $2 $3 LU
+/work/00115/gebhardt/maverick/scripts/bias/rpbias1 $1 $2 $3 RL
+/work/00115/gebhardt/maverick/scripts/bias/rpbias1 $1 $2 $3 RU

@@ -1,0 +1,59 @@
+spec=$1
+mth=$2
+ls tmp/2*/*LL_f.fits | awk '{print "\""$1"\""}' > list
+rm -f imcmb.fits
+~gebhardt/bin/imcmb << eof
+list
+eof
+mv imcmb.fits LL.fits
+ls tmp/2*/*LU_f.fits | awk '{print "\""$1"\""}' > list
+rm -f imcmb.fits
+~gebhardt/bin/imcmb << eof
+list
+eof
+mv imcmb.fits LU.fits
+ls tmp/2*/*RL_f.fits | awk '{print "\""$1"\""}' > list
+rm -f imcmb.fits
+~gebhardt/bin/imcmb << eof
+list
+eof
+mv imcmb.fits RL.fits
+ls tmp/2*/*RU_f.fits | awk '{print "\""$1"\""}' > list
+rm -f imcmb.fits
+~gebhardt/bin/imcmb << eof
+list
+eof
+mv imcmb.fits RU.fits
+mv LL.fits s${spec}m${mth}_LL.fits
+mv LU.fits s${spec}m${mth}_LU.fits
+mv RL.fits s${spec}m${mth}_RL.fits
+mv RU.fits s${spec}m${mth}_RU.fits
+
+ls tmp/2*/*LL_f2.fits | awk '{print "\""$1"\""}' > list
+rm -f imcmb.fits
+~gebhardt/bin/imcmb << eof
+list
+eof
+mv imcmb.fits LL.fits
+ls tmp/2*/*LU_f2.fits | awk '{print "\""$1"\""}' > list
+rm -f imcmb.fits
+~gebhardt/bin/imcmb << eof
+list
+eof
+mv imcmb.fits LU.fits
+ls tmp/2*/*RL_f2.fits | awk '{print "\""$1"\""}' > list
+rm -f imcmb.fits
+~gebhardt/bin/imcmb << eof
+list
+eof
+mv imcmb.fits RL.fits
+ls tmp/2*/*RU_f2.fits | awk '{print "\""$1"\""}' > list
+rm -f imcmb.fits
+~gebhardt/bin/imcmb << eof
+list
+eof
+mv imcmb.fits RU.fits
+mv LL.fits s${spec}m${mth}_2_LL.fits
+mv LU.fits s${spec}m${mth}_2_LU.fits
+mv RL.fits s${spec}m${mth}_2_RL.fits
+mv RU.fits s${spec}m${mth}_2_RU.fits

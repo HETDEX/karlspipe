@@ -1,0 +1,112 @@
+redo:
+201702
+201712
+201807
+201903
+201909 
+
+- there was no data from 20190328 until April, so ignore those
+- 092: remove i092 calib in 201909; set 20190901-20190912 to 201908 and 20190914-20190931 to 201910
+awk '{if($5=="092"&&$2<20190913) print $1,$2,$3,$4,$5,$6,201908,$8; else if($5=="092"&&$2>20190913) print $1,$2,$3,$4,$5,$6,201910,$8; else print $0}' runs201909.orig > runs201909
+
+- for the 20180725, just replace those after with 201808 calibration
+awk '{if($5=="022"&&$2>20180726) print $1,$2,$3,$4,$5,$6,201808,$8; else print $0}' runs201807.orig > rjunk1
+awk '{if($5=="023"&&$2>20180726) print $1,$2,$3,$4,$5,$6,201808,$8; else print $0}' rjunk1 > rjunk2
+awk '{if($5=="024"&&$2>20180726) print $1,$2,$3,$4,$5,$6,201808,$8; else print $0}' rjunk2 > rjunk1
+awk '{if($5=="026"&&$2>20180726) print $1,$2,$3,$4,$5,$6,201808,$8; else print $0}' rjunk1 > rjunk2
+awk '{if($5=="032"&&$2>20180726) print $1,$2,$3,$4,$5,$6,201808,$8; else print $0}' rjunk2 > rjunk1
+awk '{if($5=="034"&&$2>20180726) print $1,$2,$3,$4,$5,$6,201808,$8; else print $0}' rjunk1 > rjunk2
+awk '{if($5=="035"&&$2>20180726) print $1,$2,$3,$4,$5,$6,201808,$8; else print $0}' rjunk2 > rjunk1
+awk '{if($5=="036"&&$2>20180726) print $1,$2,$3,$4,$5,$6,201808,$8; else print $0}' rjunk1 > rjunk2
+awk '{if($5=="037"&&$2>20180726) print $1,$2,$3,$4,$5,$6,201808,$8; else print $0}' rjunk2 > rjunk1
+awk '{if($5=="042"&&$2>20180726) print $1,$2,$3,$4,$5,$6,201808,$8; else print $0}' rjunk1 > rjunk2
+awk '{if($5=="043"&&$2>20180726) print $1,$2,$3,$4,$5,$6,201808,$8; else print $0}' rjunk2 > rjunk1
+awk '{if($5=="044"&&$2>20180726) print $1,$2,$3,$4,$5,$6,201808,$8; else print $0}' rjunk1 > rjunk2
+awk '{if($5=="045"&&$2>20180726) print $1,$2,$3,$4,$5,$6,201808,$8; else print $0}' rjunk2 > rjunk1
+awk '{if($5=="047"&&$2>20180726) print $1,$2,$3,$4,$5,$6,201808,$8; else print $0}' rjunk1 > rjunk2
+awk '{if($5=="052"&&$2>20180726) print $1,$2,$3,$4,$5,$6,201808,$8; else print $0}' rjunk2 > rjunk1
+awk '{if($5=="053"&&$2>20180726) print $1,$2,$3,$4,$5,$6,201808,$8; else print $0}' rjunk1 > rjunk2
+cp rjunk2 runs201807
+
+- for the 20190327, just replace those after with 201904 calibration
+awk '{if($5=="063"&&$2>20190327) print $1,$2,$3,$4,$5,$6,201904,$8; else print $0}' runs201903.orig > rjunk1
+awk '{if($5=="067"&&$2>20190327) print $1,$2,$3,$4,$5,$6,201904,$8; else print $0}' rjunk1 > rjunk2
+awk '{if($5=="076"&&$2>20190327) print $1,$2,$3,$4,$5,$6,201904,$8; else print $0}' rjunk2 > rjunk1
+awk '{if($5=="083"&&$2>20190327) print $1,$2,$3,$4,$5,$6,201904,$8; else print $0}' rjunk1 > rjunk2
+awk '{if($5=="084"&&$2>20190327) print $1,$2,$3,$4,$5,$6,201904,$8; else print $0}' rjunk2 > rjunk1
+awk '{if($5=="085"&&$2>20190327) print $1,$2,$3,$4,$5,$6,201904,$8; else print $0}' rjunk1 > rjunk2
+awk '{if($5=="086"&&$2>20190327) print $1,$2,$3,$4,$5,$6,201904,$8; else print $0}' rjunk2 > rjunk1
+awk '{if($5=="087"&&$2>20190327) print $1,$2,$3,$4,$5,$6,201904,$8; else print $0}' rjunk1 > rjunk2
+awk '{if($5=="092"&&$2>20190327) print $1,$2,$3,$4,$5,$6,201904,$8; else print $0}' rjunk2 > rjunk1
+awk '{if($5=="097"&&$2>20190327) print $1,$2,$3,$4,$5,$6,201904,$8; else print $0}' rjunk1 > rjunk2
+cp rjunk2 runs201903
+
+awk '{if($5=="083"&&$2<20171205) print $1,$2,$3,$4,$5,$6,201711,$8; else print $0}' runs201712.orig > rjunk1
+awk '{if($5=="083"&&$2>20171220) print $1,$2,$3,$4,$5,$6,201801,$8; else print $0}' rjunk1 > rjunk2
+cp rjunk2 runs201712
+
+awk '{if($5=="106"&&$2>20170226) print $1,$2,$3,$4,$5,$6,201703,$8; else print $0}' runs201702.orig > runs201702
+
+013 20190523 to 20191015; no mod
+014 same
+015 20180725 to 20190913 to 20191201; no mod
+016 same
+021 same
+022 20180725 to 20180726: MODIFY
+023 20180725 to 20180726: MODIFY
+024 20180725 to 20180726 to 20191201: MODIFY 
+025 20180220 to 20180726; no mod
+026 20180725 to 20180726: MODIFY
+027 same
+028 same
+031 same
+032 20180725 to 20180726: MODIFY
+033 same
+034 20180725 to 20180726: MODIFY
+035 20180725 to 20180726: MODIFY
+036 20180725 to 20180726: MODIFY
+037 20180725 to 20180726: MODIFY
+038 same
+041 same
+042 20180725 to 20180726: MODIFY
+043 20180725 to 20180726: MODIFY
+044 20180725 to 20180726: MODIFY
+045 20180725 to 20180726: MODIFY
+046 same
+047 20180725 to 20180726: MODIFY
+048 same
+052 20180725 to 20180726: MODIFY
+053 20180725 to 20180726: MODIFY
+062 20190222 to 20190328; no mod
+063 20190327 to 20190328: MODIFY
+067 20190327 to 20190328: MODIFY
+068 same
+071 same
+072 20190327 to 20190523; no mod
+073 20190327 to 20190606; no mod
+074 20190327 to 20190711; no mod
+075 20190327 to 20190411; no mod
+076 20190327 to 20190328: MODIFY
+077 20190327 to 20190711; no mod
+078 same
+081 same
+082 same
+083 20171204 to 20171221 to 20190327 to 20190328: MODIFY
+084 20190327 to 20190328: MODIFY
+085 20190327 to 20190328: MODIFY
+086 20190327 to 20190328: MODIFY
+087 20190327 to 20190328: MODIFY
+088 same
+091 same
+092 20190327 to 20190328 to 20190912 to 20190914: MODIFY
+093 same
+094 same
+095 same
+096 same
+097 20190327 to 20190328: MODIFY
+098 same
+103 same
+104 same
+105 same
+106 20170227 to 20170228: MODIFY
+

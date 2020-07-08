@@ -1,0 +1,22 @@
+spec=$1
+dir=$(pwd)
+cd /tmp
+mkdir -p chi${spec}
+cd chi${spec}
+cp $dir/mklist0 .
+cp $dir/listmth_2020 list2
+rm -f imcmb.fits
+mklist0 ${spec} LL > listin
+~gebhardt/bin/imcmbchi
+mv imcmb.fits $dir/chi${spec}LL.fits
+mklist0 ${spec} LU > listin
+~gebhardt/bin/imcmbchi
+mv imcmb.fits $dir/chi${spec}LU.fits
+mklist0 ${spec} RL > listin
+~gebhardt/bin/imcmbchi
+mv imcmb.fits $dir/chi${spec}RL.fits
+mklist0 ${spec} RU > listin
+~gebhardt/bin/imcmbchi
+mv imcmb.fits $dir/chi${spec}RU.fits
+cd /tmp
+rm -rf chi${spec}

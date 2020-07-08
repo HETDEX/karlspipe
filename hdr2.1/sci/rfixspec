@@ -1,0 +1,18 @@
+spec=$1
+mkdir -p fix${spec}
+cd fix${spec}
+# mkdir -p tmp
+awk '{if($6==spec0) print $1,$2,$3,$4,$5,$6,$7,2}' spec0=$spec /work/00115/gebhardt/maverick/gettar/runs20???? > rt
+#awk '{if($6==spec0) print $1,$2,$3,$4,$5,$6,$7,2}' spec0=$spec ../sci202001/runs202001 > rt
+#awk '{if($6==spec0) print $1,$2,$3,$4,$5,$6,$7,2}' spec0=$spec ../sci202002/runs202002 >> rt
+#awk '{if($6==spec0) print $1,$2,$3,$4,$5,$6,$7,2}' spec0=$spec ../sci202003/runs202003 >> rt
+#awk '{if($6==spec0) print $1,$2,$3,$4,$5,$6,$7,2}' spec0=$spec ../sci202004/runs202004 >> rt
+# awk '{print "rcopym",$2,$3,$4,$5,$6}' rt > runcp
+cp /data/00115/gebhardt/fixspec/rback .
+cp /data/00115/gebhardt/fixspec/rcopym .
+# chmod +x runcp
+chmod +x rt
+~gebhardt/jobsplitter2w rt 20 40 "02:00:00"
+echo " "
+echo "cd fix${spec}"
+~gebhardt/bin/rslurm rt

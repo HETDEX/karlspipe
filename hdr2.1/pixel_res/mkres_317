@@ -1,0 +1,30 @@
+spec=$1
+dir=$(pwd)
+cd /tmp
+mkdir -p res${spec}
+cd res${spec}
+cp $dir/mklist0 .
+cp $dir/listmth_317 list2
+rm -f imcmb.fits imcmbs.fits imcmb1.fits
+mklist0 ${spec} LL > listin
+~gebhardt/bin/imcmbext
+mv imcmb.fits $dir/res${spec}LL.fits
+mv imcmbs.fits $dir/sres${spec}LL.fits
+mv imcmb1.fits $dir/rres${spec}LL.fits
+mklist0 ${spec} LU > listin
+~gebhardt/bin/imcmbext
+mv imcmb.fits $dir/res${spec}LU.fits
+mv imcmbs.fits $dir/sres${spec}LU.fits
+mv imcmb1.fits $dir/rres${spec}LU.fits
+mklist0 ${spec} RL > listin
+~gebhardt/bin/imcmbext
+mv imcmb.fits $dir/res${spec}RL.fits
+mv imcmbs.fits $dir/sres${spec}RL.fits
+mv imcmb1.fits $dir/rres${spec}RL.fits
+mklist0 ${spec} RU > listin
+~gebhardt/bin/imcmbext
+mv imcmb.fits $dir/res${spec}RU.fits
+mv imcmbs.fits $dir/sres${spec}RU.fits
+mv imcmb1.fits $dir/rres${spec}RU.fits
+cd /tmp
+rm -rf res${spec}

@@ -1,0 +1,5 @@
+awk '{print "/work/00115/gebhardt/maverick/scripts/setup/rgetifucen",$1,$2}' dex.hdr2 > rtall
+
+awk '{print "/work/00115/gebhardt/maverick/scripts/rsp/rfitsp1",$2,$3,35,4505,50,$1,$4"v"$5,1.70,3.0,3.5,0.5,3,104}' ifu* | sed s/multi_// > rdet0
+awk '{print "/work/00115/gebhardt/maverick/scripts/rsp/rfitsp1",$2,$3,35,4505,50,$1,$4"v"$5,1.70,3.0,3.5,0.5,3,106}' ifu* | sed s/multi_// > rcal0
+

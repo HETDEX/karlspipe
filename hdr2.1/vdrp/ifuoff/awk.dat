@@ -1,0 +1,21 @@
+# wc /data/00115/gebhardt/vdrp/shifts/201*/xy*.dat | awk '{if($1>8&&$1<200) print "rawk",$4}' | grep -v total > rj
+# rj > j1
+# awk '{print $5-$11,$6-$12,1,$5,$6,$4,$1}' j1 > j2
+
+wc /data/00115/gebhardt/vdrp/shifts/201901*/xy*.dat | awk '{if($1>8&&$1<200) print "rawk",$4}' | grep -v total > rj
+wc /data/00115/gebhardt/vdrp/shifts/201902*/xy*.dat | awk '{if($1>8&&$1<200) print "rawk",$4}' | grep -v total >> rj
+wc /data/00115/gebhardt/vdrp/shifts/201903*/xy*.dat | awk '{if($1>8&&$1<200) print "rawk",$4}' | grep -v total >> rj
+rj > j1pre
+wc /data/00115/gebhardt/vdrp/shifts/201904*/xy*.dat | awk '{if($1>8&&$1<200) print "rawk",$4}' | grep -v total > rj
+wc /data/00115/gebhardt/vdrp/shifts/201905*/xy*.dat | awk '{if($1>8&&$1<200) print "rawk",$4}' | grep -v total >> rj
+wc /data/00115/gebhardt/vdrp/shifts/201906*/xy*.dat | awk '{if($1>8&&$1<200) print "rawk",$4}' | grep -v total >> rj
+wc /data/00115/gebhardt/vdrp/shifts/201907*/xy*.dat | awk '{if($1>8&&$1<200) print "rawk",$4}' | grep -v total >> rj
+wc /data/00115/gebhardt/vdrp/shifts/201908*/xy*.dat | awk '{if($1>8&&$1<200) print "rawk",$4}' | grep -v total >> rj
+wc /data/00115/gebhardt/vdrp/shifts/201909*/xy*.dat | awk '{if($1>8&&$1<200) print "rawk",$4}' | grep -v total >> rj
+wc /data/00115/gebhardt/vdrp/shifts/201910*/xy*.dat | awk '{if($1>8&&$1<200) print "rawk",$4}' | grep -v total >> rj
+wc /data/00115/gebhardt/vdrp/shifts/201911*/xy*.dat | awk '{if($1>8&&$1<200) print "rawk",$4}' | grep -v total >> rj
+rj > j1post
+
+wc /data/00115/gebhardt/vdrp/shifts/2020*/xy*.dat | awk '{if($1>8&&$1<300) print "rawk",$4}' | grep -v total > rj
+wc /data/00115/gebhardt/vdrp/shifts/2019122*/xy*.dat | awk '{if($1>8&&$1<300) print "rawk",$4}' | grep -v total >> rj
+rj > j1
