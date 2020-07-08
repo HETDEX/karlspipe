@@ -1,2 +1,0 @@
-cd csfiles
-awk '{s+=1; print "/work/00115/gebhardt/maverick/scripts/rsp/rsp3fc",$1,$2,5,4505,50,s,$5,1.70,3.0,3.5,0.1,13,107,$3,$4}' 2*cs > ../rcs0

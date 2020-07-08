@@ -1,5 +1,0 @@
-rm -f in.fits imtrap.fits trap.out
-cp $1.fits in.fits
-~gebhardt/bin/imgetctrap
-mv trap.out $1.ctrap
-mv imtrap.fits $1.fits

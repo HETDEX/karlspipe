@@ -1,1 +1,0 @@
-/home/00115/gebhardt/wcs/wcstools-3.9.2/bin/gethead -p v*/*/*/*LL_sci.fits OBJECT EXPTIME DARKTIME MJD TRAJCRA TRAJCDEC PARANGLE STRUCTAZ DETTEMP AMBTEMP

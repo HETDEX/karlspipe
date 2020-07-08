@@ -1,7 +1,0 @@
-mth=202002
-cd /work/03946/hetdex/maverick
-ls ${mth}??/virus/virus0000*tar  | awk '{print "tar tvf",$1}' > ~/rt
-chmod +x ~/rt
-~/rt > ~/j1
-grep -v drwxr ~/j1 | awk '{print $6}' | sed s/"\/"/" "/g | sed s/T/" "/ | awk '{print $4"/virus/"$1"/"$2"/"$3"/"$4"T"$5}' | grep -v shuffle | grep -v gc > ~/j1t
-mv ~/j1t ${mth}tarlist

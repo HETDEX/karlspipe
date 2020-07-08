@@ -1,6 +1,0 @@
-mth=$1
-cd ${mth}bias
-ls masterbias_*fits | awk '{print "rtrap",$1}' | sed s/.fits// > rt
-cp /data/00115/gebhardt/combbias/rtrap .
-chmod +x rt
-rt
