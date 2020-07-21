@@ -1,0 +1,4 @@
+rm -r 2*/add_radec_angoff_trial
+rm 2*/use.psf
+rm 2*/*.opt
+rm 2*/2*.log

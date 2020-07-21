@@ -250,11 +250,16 @@ a file for each run called 20190101v011.cs.
 
 rmkcs will then create the script (rcs0) which will peak up on the
 continuum source. This needs to be done in batch.
+sed -i s/"\/work\/00115\/gebhardt\/maverick\/scripts\/rsp\/rsp3fc"/rspcs/ rcs0
 
 rmkcs2 will then create the final extraction script, called rext1.
+rmkcs2 > rext1
 
 Then run rext1 in batch to generate continuum spectra and the
 information of the fibers that went into it.
+
+awks.dat
+need findmatch.f
 
 16) Generate calibrated fibers: used for HDR2 ingestion only. These
 calibrate all individual fibers, and generate multi-extension fits files.

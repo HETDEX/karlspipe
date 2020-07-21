@@ -1,0 +1,4 @@
+awk '{if($5>1.7&&$5<8) print $0}' output/20180415v016_*mc | sort -g +8 -9 | awk '{s+=1; print "rgetfield",$13,$14,3,$1,s,$9,$3,$7}'
+awk '{if($5>1.7&&$5<8&&$11<1.4&&$9>5.0) print $0}' output/20200610v013_*mc | sort -g +8 -9 | awk '{s+=1; print "rgetfield",$13,$14,3,$1,s+6000,$9,$3,$7,"20200610v013"}' 
+grep . output/20180613v012_*mc | awk '{if($6>1.7&&$6<8&&$12<1.4&&$10>5.0&&$8>-3&&$8<8) print $0}' | sort -g +9 -10 
+grep . output/20180613v012_*mc | awk '{if($6>1.7&&$6<8&&$12<1.4&&$10>5.0&&$8>-3&&$8<8) print $0}' | sort -g +9 -10 | sed s/"output\/"// | sed s/.mc/" "/ | awk '{print $1,$21}' > j1

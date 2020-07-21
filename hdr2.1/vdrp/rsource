@@ -1,0 +1,6 @@
+cat 2017*/shout.ifustars | grep -v "#" | awk '{if($5>1) print $0}' > sources.2017
+cat 2018*/shout.ifustars | grep -v "#" | awk '{if($5>1) print $0}' > sources.2018
+cat 2019*/shout.ifustars | grep -v "#" | awk '{if($5>1) print $0}' > sources.2019
+cat 2020*/shout.ifustars | grep -v "#" | awk '{if($5>1) print $0}' > sources.2020
+
+cat 20190209*/shout.ifustars | grep -v "#" | awk '{if($5>1) print $0}' > sources.fix

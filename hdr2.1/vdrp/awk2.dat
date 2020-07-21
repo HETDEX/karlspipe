@@ -1,0 +1,4 @@
+awk '{print "cp",$1"/2*png png_check/."}' check.dat  > rj4
+chmod +x rj4
+rm png_check/*
+rj4

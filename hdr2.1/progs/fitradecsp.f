@@ -426,15 +426,19 @@ c- write out each spectrum
             close(13)
          endif
          if(ifit1o.eq.100) then
-            ra=fitp(1,1)
-            dec=fitp(1,2)
+            nga=1
+c            ra=fitp(1,1)
+c            dec=fitp(1,2)
+            wcen=4505.
             call getint(ra,dec,ntf,raf,decf,radmaxfit,intuse)
             call fit2d(ra,dec,rfw,ntf,sflux,sfluxe,raf,decf,
      $           intuse,xw,ntf2,weight,iflag,fadcw,az,chi,amps,sumrata)
             open(unit=12,file='l2',status='unknown')
-            do i=1,ntf
-               write(12,1202) weight(i),iflag(i)
-            enddo
+            call writeinfo(12,ra,dec,ditharr,imatch,intuse,
+     $           cdith1,cdith2,cdith3,nuniq,waveda,tracea,chi2f,
+     $           ntf,weight,iflag,nga,cfield,rad0,wcen,ww,
+     $           chi2fmax,cnmax,cdmax,csmax,cemax,ixmax,iymax,
+     $           xfmax,yfmax,wmax)
             close(12)
          endif
       else
@@ -1672,7 +1676,7 @@ c - this is the residual map
          call ftg2de(im1,igc,0.,namax,ncol,nrow,resmap,anyf,ier)
          call ftclos(im1,ier)
       else
-         print *,"Not here: ",file4
+c         print *,"Not here: ",file4
          ier=0
          do j=1,112
             do i=1,1032
@@ -1693,11 +1697,11 @@ c - this is the error ratio map
          call ftg2de(im1,igc,0.,namax,ncol,nrow,ratmap,anyf,ier)
          call ftclos(im1,ier)
       else
-         print *,"Not here: ",file5
+c         print *,"Not here: ",file5
          ier=0
          do j=1,112
             do i=1,1032
-               ratmap(i,j)=1.
+               ratmap(i,j)=1.04
             enddo
          enddo
       endif
@@ -1823,15 +1827,17 @@ c            chi2(i)=chimap(iwave(i),ifib)
       enddo
 
 c- get weight for error estimate
+c      jin=1
+c      do i=1,nw
+c         call xlininte(wave(i),n,waved,xsp,yweight(i),jin,jout)
+c         jin=jout
+c      enddo
+
+c- get shifted spectrum, set to nearest if 0 (xlinint4)
       jin=1
       do i=1,nw
-         call xlininte(wave(i),n,waved,xsp,yweight(i),jin,jout)
-         jin=jout
-c         print *,i,ifib,wave(i),waved(jout),waved(jout+1),yweight(i)
-      enddo
-      jin=1
-      do i=1,nw
-         call xlinint2(wave(i),n,waved,xsp,ypa(i),jin,jout)
+c         call xlinint2(wave(i),n,waved,xsp,ypa(i),jin,jout)
+         call xlinint4(wave(i),n,waved,xsp,ypa(i),jin,jout)
          jin=jout
       enddo
       jin=1
@@ -2956,6 +2962,23 @@ c            yp=y(j)+(y(j+1)-y(j))*(xp-x(j))/(x(j+1)-x(j))
             diff2=abs(xp-x(j+1))
             yp=y(j)
             if(diff2.lt.diff1) yp=y(j+1)
+            jout=j
+            return
+         endif
+      enddo
+      if(xp.lt.x(1)) yp=y(1)
+      if(xp.gt.x(n)) yp=y(n)
+      jout=1
+      return
+      end
+
+      subroutine xlinint4(xp,n,x,y,yp,jin,jout)
+      real x(n),y(n)
+      do j=jin,n-1
+         if(xp.ge.x(j).and.xp.le.x(j+1)) then
+            yp=y(j)+(y(j+1)-y(j))*(xp-x(j))/(x(j+1)-x(j))
+            if(y(j).eq.0) yp=y(j+1)
+            if(y(j+1).eq.0) yp=y(j)
             jout=j
             return
          endif

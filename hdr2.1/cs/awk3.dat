@@ -1,0 +1,8 @@
+cat /work/05350/ecooper/wrangler/hetdex_api/known_issues/hdr2.1/badshots.list | awk '{print "rgreprm",$1}' > rg1
+grep " 2017" /work/05350/ecooper/wrangler/hetdex_api/known_issues/hdr2.1/badamps.list | awk '{print "rgreprm2",$3,$4,$5}'  > rg2
+
+cp /work/05350/ecooper/wrangler/hetdex_api/known_issues/hdr2.1/badamps.list listbad
+
+awk '{print "grep \" "$1" 20\" rext2"}' out2 > rt
+rt > j1
+awk '{print "\"spec/"$8"_"$7".spec\""}' j1

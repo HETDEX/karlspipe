@@ -1,0 +1,2 @@
+ grep 000001 202001*/shout.ifustars | awk '{if($7==0) print $0}' | sed s/"\/"/" "/ | awk '{print $1}' | uniq
+sed s/v/" "/ j1 | awk '{print "grep \" "$1,$2"\" rt"}' > rj

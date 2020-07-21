@@ -1,0 +1,15 @@
+cat /work/00115/gebhardt/maverick/gettar/dex.all /work/00115/gebhardt/maverick/gettar/others.dat > fulllist
+awk '{print "/work/00115/gebhardt/maverick/scripts/setup/rgetifucen",$1,$2}' fulllist > rtall
+
+awk '{print "rcal_all",$2,$3,35,4505,50,$1,$4"v"$5,1.70,3.0,3.5,0.5,3,106}' ifu* | sed s/multi_// > rcal2
+grep -v "\-666" rcal2 > rcal3
+grep "\-666" rcal2 > 666.dat
+
+awk '{print "/work/00115/gebhardt/maverick/scripts/rsp/rfitsp1",$2,$3,$4,$5,$6,$7,$8,1.70,3.0,3.5,2.0,1,105}' rcal3 > rflim0
+awk '{print "rf1",$2,$3,$4,$5,$6,$7,$8,1.70,3.0,3.5,0.5,3,104}' rcal3 > rdet0
+
+awk '{print $8}' 666.dat | sort | uniq | awk '{print "grep",$1,"666.dat | wc"}' > rj
+rj > j1
+paste rj j1
+
+paste rj j1 | awk '{if($6<3) print $2}' | sed s/v/" "/ | awk '{print "grep \""$1,$2"\" rta20??"}'

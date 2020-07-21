@@ -1,0 +1,2 @@
+grep 2017 /work/05350/ecooper/wrangler/hetdex_api/known_issues/hdr2.1/badshots.list | awk '{print "rgreprm",$1}' > rg1
+grep " 2017" /work/05350/ecooper/wrangler/hetdex_api/known_issues/hdr2.1/badamps.list | awk '{print "rgreprm2",$3,$4,$5}'  > rg2

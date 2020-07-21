@@ -1,0 +1,28 @@
+ls 2017*/radec2_final.dat > j1
+awk '{print "grep",$2"v"$3,"j1 || echo",$2"v"$3}' rta2017 > rj1
+rj1 > j2
+grep -v radec j2 > j3
+awk '{print "grep",$1,"dex.list"}' j3 > rj3
+chmod +x rj3; rj3
+
+ls 2018*/radec2_final.dat > j1
+awk '{print "grep",$2"v"$3,"j1 || echo",$2"v"$3}' rta2018 > rj1
+rj1 > j2
+grep -v radec j2 > j3
+awk '{print "grep",$1,"dex.list"}' j3 > rj3
+chmod +x rj3; rj3
+
+ls 2019*/radec2_final.dat > j1
+awk '{print "grep",$2"v"$3,"j1 || echo",$2"v"$3}' rta2019 > rj1
+rj1 > j2
+grep -v radec j2 > j3
+awk '{print "grep",$1,"dex.list"}' j3 > rj3
+chmod +x rj3; rj3
+
+ls 2020*/radec2_final.dat > j1
+awk '{print "grep",$2"v"$3,"j1 || echo",$2"v"$3}' rta2020 > rj1
+rj1 > j2
+grep -v radec j2 > j3
+awk '{print "grep",$1,"dex.list"}' j3 > rj3
+chmod +x rj3; rj3
+

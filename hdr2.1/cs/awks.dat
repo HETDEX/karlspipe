@@ -1,0 +1,8 @@
+findmatch > j1
+awk '{if($4>$5) print $2,$4,$5,2; else print $1,$4,$5,1}' j1 > j2
+cp rext1 f1
+awk '{print "grep -v \" "$1" \" f1 > f2; mv f2 f1"}' j2 > rj
+rj
+
+awk '{print "rm spec/*_"$1".*"}' j2 > rj2
+rj2

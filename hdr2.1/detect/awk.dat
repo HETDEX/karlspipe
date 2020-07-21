@@ -1,0 +1,1 @@
+rslurm rall | sed s/_/" "/ | sed s/"\."/" "/ | awk '{print $3}' | sort -g | awk '{print "sbatch rall_"$1".slurm"}' > rall0

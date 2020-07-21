@@ -1,5 +1,5 @@
 cd fitres
-ls 2*res | awk '{print "../rgetbest",$1}' | sed s/.res// | sed s/_/" "/ > rt
-chmod +x rt
-rt > ../rext1
-
+#ls 2*res | awk '{print "../rgetbest",$1}' | sed s/.res// | sed s/_/" "/ > rt
+#chmod +x rt
+#rt > out
+awk '{print "rf1",$1,$2,5,4505,50,$5,$6,1.7,3,3.5,0.,1,100,$3,$4}' 2*res
